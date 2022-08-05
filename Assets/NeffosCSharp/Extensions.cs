@@ -2,6 +2,7 @@ using System;
 using BestHTTP.WebSocket;
 using BestHTTP.WebSocket.Extensions;
 using NeffosCSharp.ConnectionHandles;
+using UnityEngine;
 
 namespace NeffosCSharp
 {
@@ -11,11 +12,13 @@ namespace NeffosCSharp
         {
             if (ns.Events.ContainsKey(message.Event))
             {
+                Debug.Log("fired event: " + message.Event);
                 return ns.Events[message.Event].Invoke(ns, message);
             }
 
             if (ns.Events.ContainsKey(Configuration.OnAnyEvent))
             {
+                Debug.Log("fired event: " + Configuration.OnAnyEvent);
                 return ns.Events[Configuration.OnAnyEvent].Invoke(ns, message);
             }
 
@@ -49,30 +52,19 @@ namespace NeffosCSharp
             }
 
             var namespaces = new NamespaceMap();
-            // 1. if contains function instead of a string key then it's Events otherwise it's Namespaces.
-            // 2. if contains a mix of functions and keys then ~put those functions to the namespaces[""]~ it is NOT valid.
 
-            var events = new EventMap();
-            var totalKeys = 0;
-            
             for (var i = 0; i < connectionHandlers.Length; i++)
             {
-                totalKeys++;
                 var connectionHandler = connectionHandlers[i];
+                var events = new EventMap();
                 events.Add(connectionHandler.Key, connectionHandler.Handle);
-            }
-            
-            if (totalKeys == 0)
-            {
-                if (reject != null)
-                {
-                    reject("Connection Handler is empty");
-                }
-                
-                return null;
+                events.Add(Configuration.OnNamespaceConnected, connectionHandler.OnNamespaceConnected);
+                events.Add(Configuration.OnNamespaceDisconnect, connectionHandler.OnNamespaceDisconnect);
+                events.Add(Configuration.OnRoomJoined, connectionHandler.OnRoomJoined);
+                events.Add(Configuration.OnRoomLeft, connectionHandler.OnRoomLeft);
+                namespaces.Add(connectionHandler.Key, events);
             }
 
-            namespaces.Add(Configuration.OnAnyEvent, events);
             return namespaces;
         }
     }

@@ -20,7 +20,7 @@ namespace NeffosCSharp
             message.Namespace = _nsConnection.Namespace;
             message.Room = _name;
             message.Body = body;
-            return _nsConnection.Connection.Write(message);
+            return _nsConnection.Connection.WriteBinary(message);
         }
 
         public UniTask Leave()
