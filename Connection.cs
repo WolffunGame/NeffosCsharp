@@ -5,13 +5,14 @@ using BestHTTP.WebSocket;
 using Cysharp.Threading.Tasks;
 using MessagePack;
 using Newtonsoft.Json;
+using UnityEngine;
 using UnityEngine.Networking.PlayerConnection;
 
 namespace NeffosCSharp
 {
     public class Connection
     {
-        private WebSocket _webSocket;
+        private readonly WebSocket _webSocket;
         private int _reconnectionAttempts;
         private bool _isAcknowledged;
         public bool IsAcknowledged => _isAcknowledged;
@@ -49,7 +50,9 @@ namespace NeffosCSharp
 
         public NSConnection GetNamespace(string message)
         {
-            return _connectedNamespaces[message];
+            if(_connectedNamespaces.ContainsKey(message))
+                return _connectedNamespaces[message];
+            return null;
         }
 
         public bool WasReconnected => _reconnectionAttempts > 0;
@@ -71,7 +74,7 @@ namespace NeffosCSharp
                 return error;
             }
 
-            return HandleMessage("evt.data");
+            return HandleMessage(response);
         }
         
         private string HandleAck(string data)
@@ -109,7 +112,7 @@ namespace NeffosCSharp
             }
         }
 
-        public string HandleMessage(string data)
+        private string HandleMessage(string data)
         {
             var message = JsonConvert.DeserializeObject<Message>(data);
             if (message == null)
@@ -158,7 +161,7 @@ namespace NeffosCSharp
                     if (string.IsNullOrEmpty(error))
                     {
                         message.Error = error;
-                        Write(message);
+                        WriteBinary(message);
                         return error;
                     }
 
@@ -189,12 +192,12 @@ namespace NeffosCSharp
             return cts.Task;
         }
 
-        public bool Write(Message message)
+        public bool WriteBinary(Message message)
         {
             if (_closed)
                 return false;
 
-            if (message.IsConnect() && !message.IsDisconnect())
+            if (!message.IsConnect() && !message.IsDisconnect())
             {
                 //namespace pre-write check
                 var ns = GetNamespace(message.Namespace);
@@ -202,7 +205,7 @@ namespace NeffosCSharp
                     return false;
 
                 //room pre-write check
-                if (!string.IsNullOrEmpty(message.Room) && message.IsRoomJoin() && !message.IsRoomLeft())
+                if (!string.IsNullOrEmpty(message.Room) && !message.IsRoomJoin() && !message.IsRoomLeft())
                 {
                     if (!ns.Rooms.ContainsKey(message.Room))
                     {
@@ -211,8 +214,36 @@ namespace NeffosCSharp
                     }
                 }
             }
+            
+            var buff = message.SerializeBinary();
+            _webSocket.Send(buff);
+            return true;
+        }
+        
+        public bool WriteNative(Message message)
+        {
+            if (_closed)
+                return false;
+            if (!message.IsConnect() && !message.IsDisconnect())
+            {
+                //namespace pre-write check
+                var ns = GetNamespace(message.Namespace);
+                if (ns == null)
+                    return false;
 
-            _webSocket.Send(message.Serialize());
+                //room pre-write check
+                if (!string.IsNullOrEmpty(message.Room) && !message.IsRoomJoin() && !message.IsRoomLeft())
+                {
+                    if (!ns.Rooms.ContainsKey(message.Room))
+                    {
+                        //// tried to send to a not joined room.
+                        return false;
+                    }
+                }
+            }
+            
+            var buff = message.SerializeNative();
+            _webSocket.Send(buff);
             return true;
         }
 
@@ -222,27 +253,34 @@ namespace NeffosCSharp
             if (_closed)
                 return UniTask.FromException<Message>(new Exception(Exceptions.ErrorClosed));
 
-            var id = Guid.NewGuid().ToString();
+            //id = current time in tick
+            var id = $"{Configuration.waitComesFromClientPrefix}{DateTime.Now.Ticks}";
             message.Wait = id;
 
             var tcs = new UniTaskCompletionSource<Message>();
-            _waitingMessages.Add(message.Wait, m =>
+            //wait for response or error from server
+            _waitingMessages.Add(id, (m) =>
             {
-                if (m.IsError)
+                if (!string.IsNullOrEmpty(m.Error))
+                {
                     tcs.TrySetException(new Exception(m.Error));
+                }
                 else
+                {
                     tcs.TrySetResult(m);
+                }
             });
-
-            var wrote = Write(message);
+            
+            var wrote = WriteBinary(message);
             if (!wrote)
                 return UniTask.FromException<Message>(new Exception(Exceptions.ErrorWrite));
+            
             return tcs.Task;
         }
 
         public void WriteEmptyReply(string wait)
         {
-            var message = $"{wait}{Configuration.messageSeparator.ToString()}";
+            var message = $"{wait}{Configuration.messageSeparator}";
             _webSocket.Send(message);
         }
 
@@ -282,6 +320,7 @@ namespace NeffosCSharp
             connectMessage.Namespace = @namespace;
             connectMessage.Event = Configuration.OnNamespaceConnect;
             connectMessage.IsLocal = true;
+            connectMessage.SetBinary = true;
 
             ns = new NSConnection(this, @namespace, events);
             var error = ns.FireEvent(connectMessage);
@@ -296,6 +335,7 @@ namespace NeffosCSharp
             }
             catch (Exception e)
             {
+                Debug.LogError(e.StackTrace);
                 throw new Exception(e.Message);
             }
 
@@ -343,7 +383,7 @@ namespace NeffosCSharp
             if (events == null)
             {
                 message.Error = Exceptions.ErrorBadNamespace;
-                Write(message);
+                WriteBinary(message);
                 return;
             }
 

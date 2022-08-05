@@ -46,7 +46,7 @@ namespace NeffosCSharp
             message.Namespace = _namespace;
             message.Event = eventName;
             message.Body = body;
-            return _connection.Write(message);
+            return _connection.WriteNative(message);
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace NeffosCSharp
             message.Event = eventName;
             message.Body = body;
             message.SetBinary = true;
-            return _connection.Write(message);
+            return _connection.WriteBinary(message);
         }
 
         /// <summary>
@@ -214,7 +214,7 @@ namespace NeffosCSharp
                 if (!string.IsNullOrEmpty(error))
                 {
                     message.Error = error;
-                    _connection.Write(message);
+                    _connection.WriteBinary(message);
                     return;
                 }
                 
