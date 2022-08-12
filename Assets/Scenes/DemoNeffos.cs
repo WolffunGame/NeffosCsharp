@@ -6,14 +6,15 @@ using UnityEngine.UI;
 
 public class DemoNeffos : MonoBehaviour
 {
-    private const string URL = "wss://gameserver.staging.thetanarena.com/ws/chat";
+    public string URL = "ws://localhost:8080/ws/chat";
 
     public string KEY =
-        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJKV1RfQVBJUyIsImNhbl9taW50IjpmYWxzZSwiZXhwIjoxNjU5OTU2ODkyLCJpc3MiOiJodHRwczovL2FwaS5tYXJrZXRwbGFjZS5hcHAiLCJuYmYiOjE2NTkzNTIwOTIsInJvbGUiOjAsInNpZCI6IjB4ZjUxMWYzMTJiMTNmMjVhOGY0M2NjNjQ4ZTU2ZDBlYjg2MDMxZmViYyIsInN1YiI6InBUTUwydE01QmNyNiIsInVzZXJfaWQiOiI2MmU3ODkyMWE3MjBiNjYyYmRkYWM0MTYifQ.-WSoFcK8RIsVomT9-r1me2YCl0vKD23R34ivNvbCsTk";
+        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIweGFmMzU4ZGNjMzRlOWFkZDBjOTBmYzlkNTM4YTI5ZjlkOThkMjg0NTQiLCJzdWIiOiJLQkMuVHJ1bmciLCJ1c2VyX2lkIjoiNjFjOWExNTdlODllODg1MGI4NGNmM2ZlIiwiY2FuX21pbnQiOiJGYWxzZSIsIm5iZiI6MTY1OTYwMzA4OCwiZXhwIjoxNjYwMjA3ODg4LCJpc3MiOiJodHRwczovL2FwaS5tYXJrZXRwbGFjZS5hcHAiLCJhdWQiOiJKV1RfQVBJUyJ9.5-9ccdKYfjhlqOUg34ad-m2MGKkiGfM_TbbbzVnGt0A";
 
     public string @namespace = "Game";
     async void MyTest()
     {
+        Debug.Log("start my test");
         var neffosClient = new NeffosClient();
         neffosClient.Key = KEY;
         var chatServiceHandler = new ChatServiceHandler();
@@ -24,15 +25,18 @@ public class DemoNeffos : MonoBehaviour
                 chatServiceHandler
             },
             new Options(), s => { Debug.Log("rejected reason: " + s); });
+        Debug.Log("prepare for connect");
         var nsConnection = await c.Connect(@namespace);
         Debug.Log("connected to namespace: " + @namespace);
-        await nsConnection.JoinRoom("Party-499");
+        
+        var room = await nsConnection.JoinRoom("Party-499");
+        Debug.Log("joined room: " + room);
         nsConnection.EmitBinary("Say", "Hello World");
     }
 
     private void Start()
     {
-        //MyTest();
+        MyTest();
     }
 
     private void OnGUI()

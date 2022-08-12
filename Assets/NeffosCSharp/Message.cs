@@ -177,62 +177,7 @@ namespace NeffosCSharp
             );
             return data;
         }
-
-        public Message DeserializeBinary(byte[] data, bool allowNativeMessage)
-        {
-            var message = new Message();
-            if (data.Length == 0)
-            {
-                message.IsInvalid = true;
-                return message;
-            }
-
-
-            var messageString = MessagePackSerializer.Deserialize<string>(data);
-            var messageParts = messageString.Split(Configuration.messageSeparator);
-            if (messageParts.Length != Configuration.validMessageSepCount)
-            {
-                if (!allowNativeMessage)
-                {
-                    message.IsInvalid = true;
-                    return message;
-                }
-                else
-                {
-                    message.Event = Configuration.OnNativeMessage;
-                    message.Body = messageString;
-                }
-            }
-
-            message.Wait = messageParts[0];
-            message.Namespace = StringUtils.UnescapeMessageField(messageParts[1]);
-            message.Event = StringUtils.UnescapeMessageField(messageParts[2]);
-            message.Room = StringUtils.UnescapeMessageField(messageParts[3]);
-            message.IsError = messageParts[4].Equals(Configuration.trueString);
-            message.IsNoOp = messageParts[5].Equals(Configuration.trueString);
-
-            var body = messageParts[6];
-            if (!string.IsNullOrEmpty(body))
-            {
-                if (message.IsError)
-                    message.Error = body;
-                else
-                    message.Body = body;
-            }
-            else
-            {
-                message.Body = string.Empty;
-            }
-
-            message.IsInvalid = false;
-            message.IsForced = false;
-            message.IsLocal = false;
-            message.IsNative = allowNativeMessage && message.Event.Equals(Configuration.OnNativeMessage);
-
-            return message;
-        }
-
-        public Message DeserializeNative(string messageString, bool allowNativeMessage)
+        public static Message Deserialize(string messageString, bool allowNativeMessage)
         {
             var message = new Message();
             if (string.IsNullOrEmpty(messageString))

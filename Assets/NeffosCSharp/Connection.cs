@@ -114,7 +114,7 @@ namespace NeffosCSharp
 
         private string HandleMessage(string data)
         {
-            var message = JsonConvert.DeserializeObject<Message>(data);
+            var message = Message.Deserialize(data, this._allowNativeMessages);
             if (message == null)
             {
                 return Exceptions.ErrorInvalidPayLoad;
@@ -316,11 +316,13 @@ namespace NeffosCSharp
                 throw new Exception(Exceptions.ErrorBadNamespace);
             }
 
-            var connectMessage = new Message();
-            connectMessage.Namespace = @namespace;
-            connectMessage.Event = Configuration.OnNamespaceConnect;
-            connectMessage.IsLocal = true;
-            connectMessage.SetBinary = true;
+            var connectMessage = new Message
+            {
+                Namespace = @namespace,
+                Event = Configuration.OnNamespaceConnect,
+                IsLocal = true,
+                SetBinary = true
+            };
 
             ns = new NSConnection(this, @namespace, events);
             var error = ns.FireEvent(connectMessage);
