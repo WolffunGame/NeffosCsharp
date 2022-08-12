@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using BestHTTP;
+using BestHTTP.SecureProtocol.Org.BouncyCastle.Math.EC;
 using BestHTTP.WebSocket;
 using Cysharp.Threading.Tasks;
 using NeffosCSharp.ConnectionHandles;
@@ -60,15 +61,14 @@ namespace NeffosCSharp
                 }
             };
             var connection = new Connection(ws, namespaces);
-
+            
             ws.OnMessage += OnMessage;
             ws.OnBinary += OnBinary;
             ws.OnError += OnError;
             ws.OnClosed += OnClosed;
-            ws.OnOpen += Open;
-
-            ws.Open();
+            ws.OnOpen += OnOpen;
             
+            ws.Open();
 
             void OnMessage(WebSocket webSocket, string message)
             {
@@ -135,10 +135,10 @@ namespace NeffosCSharp
                 // connection.Close();
                 //TODO Try to reconnect
             }
-            void Open(WebSocket websocket)
+            void OnOpen(WebSocket websocket)
             {
                 Debug.Log("Websocket opened");
-                ucs.TrySetResult(connection);
+                ws.Send(Configuration.ackBinary);
             }
             return ucs.Task;
         }
