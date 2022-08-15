@@ -184,21 +184,24 @@ namespace NeffosCSharp
 
         public void ForceLeaveAll(bool isLocal)
         {
-            var leaveMessage = new Message();
-            leaveMessage.Namespace = _namespace;
-            leaveMessage.Event = Configuration.OnRoomLeave;
-            leaveMessage.IsLocal = isLocal;
-            leaveMessage.IsForced = true;
-            
+            var leaveMessage = new Message
+            {
+                Namespace = _namespace,
+                Event = Configuration.OnRoomLeave,
+                IsLocal = isLocal,
+                IsForced = true
+            };
+
             foreach (var pair in _rooms)
             {
                 leaveMessage.Room = pair.Key;
                 this.FireEvent(leaveMessage);
-                _rooms.Remove(pair.Key);
+
                 leaveMessage.Event = Configuration.OnRoomLeft;
                 this.FireEvent(leaveMessage);
                 leaveMessage.Event = Configuration.OnRoomLeave;
             }
+            _rooms.Clear();
         }
 
         public void ReplyRoomJoin(Message message)

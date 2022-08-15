@@ -1,0 +1,17 @@
+{
+    "name": "wolffun.neffos.csharp",
+    "rootNamespace": "",
+    "references": [
+        "BestHTTP",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

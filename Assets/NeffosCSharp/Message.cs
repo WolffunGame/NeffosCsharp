@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using MessagePack;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -138,7 +137,6 @@ namespace NeffosCSharp
                 isNoOpString,
                 string.IsNullOrEmpty(Body) ? string.Empty : Body
             );
-            Debug.Log(data);
             //data to byte array
             var bytes = Encoding.UTF8.GetBytes(data);
             //if binary is set then add binary prefix

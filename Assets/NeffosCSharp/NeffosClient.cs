@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace NeffosCSharp
 {
-    public class NeffosClient
+    public class NeffosClient : IDisposable
     {
         const string WebsocketReconnectHeaderKey = "X-Websocket-Reconnect";
         
@@ -72,7 +72,6 @@ namespace NeffosCSharp
 
             void OnMessage(WebSocket webSocket, string message)
             {
-                Debug.Log(message);
                 var error = connection.Handle(message);
                 if (error != null)
                 {
@@ -85,7 +84,6 @@ namespace NeffosCSharp
 
             void OnBinary(WebSocket webSocket, byte[] data)
             {
-                Debug.Log(data.Length);
                 //encode data to string
                 var message = Encoding.UTF8.GetString(data);
                 var error = connection.Handle(message);
@@ -100,8 +98,8 @@ namespace NeffosCSharp
 
             void OnError(WebSocket webSocket, string exception)
             {
-                connection.Close();
                 ucs.TrySetException(new Exception(exception));
+                connection.Close();
             }
 
             void OnClosed(WebSocket webSocket, ushort code, string reason)
@@ -142,6 +140,10 @@ namespace NeffosCSharp
             }
             return ucs.Task;
         }
-        
+
+        public void Dispose()
+        {
+            
+        }
     }
 }

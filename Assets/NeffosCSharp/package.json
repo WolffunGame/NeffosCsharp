@@ -1,0 +1,15 @@
+{
+  "name": "com.wolffun.neffoscsharp",
+  "displayName": "Neffos C#",
+  "version": "1.0.0",
+  "unity": "2020.3",
+  "license": "MIT",
+  "dependencies": {
+    "com.cysharp.unitask": "2.2.5"
+  },
+  "author": {
+    "name": "Nguyen Danh Dat"
+  },
+  "type": "library",
+  "description": "Library for Websocket management in Unity"
+}
