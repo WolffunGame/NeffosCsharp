@@ -1,12 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using BestHTTP.WebSocket;
 using Cysharp.Threading.Tasks;
-using MessagePack;
-using Newtonsoft.Json;
-using UnityEngine;
-using UnityEngine.Networking.PlayerConnection;
 
 namespace NeffosCSharp
 {
@@ -337,7 +332,6 @@ namespace NeffosCSharp
             }
             catch (Exception e)
             {
-                Debug.LogError(e.StackTrace);
                 throw new Exception(e.Message);
             }
 
@@ -411,19 +405,21 @@ namespace NeffosCSharp
                 return;
             }
             
-            var disconnectMessage = new Message();
-            disconnectMessage.Event = Configuration.OnNamespaceDisconnect;
-            disconnectMessage.IsLocal = true;
-            disconnectMessage.IsForced = true;
-            
+            var disconnectMessage = new Message
+            {
+                Event = Configuration.OnNamespaceDisconnect,
+                IsLocal = true,
+                IsForced = true
+            };
+
             foreach (var ns in _connectedNamespaces.Values)
             {
                 ns.ForceLeaveAll(true);
                 
                 disconnectMessage.Namespace = ns.Namespace;
                 ns.FireEvent(disconnectMessage);
-                _connectedNamespaces.Remove(ns.Namespace);
             }
+            _connectedNamespaces.Clear();
             
             _waitingMessages.Clear();
             _closed = true;
