@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using BestHTTP;
-using BestHTTP.SecureProtocol.Org.BouncyCastle.Math.EC;
 using BestHTTP.WebSocket;
 using Cysharp.Threading.Tasks;
 using NeffosCSharp.ConnectionHandles;
-using UnityEngine;
 
 namespace NeffosCSharp
 {
@@ -17,7 +15,7 @@ namespace NeffosCSharp
         public string Key { get; set; }
 
         //dial with connection handler
-        public UniTask<Connection> DialAsync(string endPoint, ConnectionHandlerBase[] connectionHandlers,
+        public UniTask<Connection> DialAsync(string endPoint, IConnectionHandler[] connectionHandlers,
             Options options, Action<string> reject)
         {
             var ucs = new UniTaskCompletionSource<Connection>();
@@ -91,7 +89,7 @@ namespace NeffosCSharp
                 {
                     ucs.TrySetException(new Exception(error));
                 }
-
+            
                 if (connection.IsAcknowledged)
                     ucs.TrySetResult(connection);
             }
@@ -135,7 +133,6 @@ namespace NeffosCSharp
             }
             void OnOpen(WebSocket websocket)
             {
-                Debug.Log("Websocket opened");
                 ws.Send(Configuration.ackBinary);
             }
             return ucs.Task;

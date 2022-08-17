@@ -167,8 +167,8 @@ namespace NeffosCSharp
             var data = string.Join(Configuration.messageSeparator,
                 Wait,
                 StringUtils.EscapeMessageField(Namespace),
-                StringUtils.EscapeMessageField(Event),
                 StringUtils.EscapeMessageField(Room),
+                StringUtils.EscapeMessageField(Event),
                 isErrorString,
                 isNoOpString,
                 string.IsNullOrEmpty(Body) ? string.Empty : Body
@@ -201,8 +201,8 @@ namespace NeffosCSharp
 
             message.Wait = messageParts[0];
             message.Namespace = StringUtils.UnescapeMessageField(messageParts[1]);
-            message.Event = StringUtils.UnescapeMessageField(messageParts[2]);
-            message.Room = StringUtils.UnescapeMessageField(messageParts[3]);
+            message.Room = StringUtils.UnescapeMessageField(messageParts[2]);
+            message.Event = StringUtils.UnescapeMessageField(messageParts[3]);
             message.IsError = messageParts[4].Equals(Configuration.trueString);
             message.IsNoOp = messageParts[5].Equals(Configuration.trueString);
 
