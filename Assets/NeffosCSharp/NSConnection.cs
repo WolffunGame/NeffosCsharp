@@ -66,6 +66,15 @@ namespace NeffosCSharp
             return _connection.WriteBinary(message);
         }
 
+        public UniTask<Message> Ask(string eventName, string body)
+        {
+            var message = new Message();
+            message.Namespace = _namespace;
+            message.Event = eventName;
+            message.Body = body;
+            return _connection.Ask(message);
+        }
+
         /// <summary>
         /// The joinRoom method can be used to join to a specific room, rooms are dynamic.
         /// Returns a `Room` or an error.
@@ -97,8 +106,7 @@ namespace NeffosCSharp
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
-                return null;
+                throw new Exception($"Could not join room {roomName}", e);
             }
 
             var error = this.FireEvent(joinMessage);
@@ -128,8 +136,7 @@ namespace NeffosCSharp
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
-                return;
+                throw new Exception($"Could not leave room {message.Room}", e);
             }
 
             var error = this.FireEvent(message);
@@ -138,12 +145,13 @@ namespace NeffosCSharp
                 Debug.LogError(error);
                 return;
             }
-            
+
             _rooms.Remove(message.Room);
-            
+
             message.Event = Configuration.OnRoomLeft;
             this.FireEvent(message);
         }
+
         /// <summary>
         /// The room method returns a joined `Room`. 
         /// </summary>
@@ -158,6 +166,7 @@ namespace NeffosCSharp
 
             return room;
         }
+
         /// <summary>
         /// The leaveAll method sends a leave room signal to all rooms and fires the `OnRoomLeave` and `OnRoomLeft` (if no error occurred) events.
         /// </summary>
@@ -165,21 +174,27 @@ namespace NeffosCSharp
         {
             var leaveMessage = new Message();
             leaveMessage.Namespace = _namespace;
-            leaveMessage.Event = Configuration.OnRoomLeft;
+            leaveMessage.Event = Configuration.OnRoomLeave;
             leaveMessage.IsLocal = true;
+            var tasks = new List<UniTask>();
             foreach (var pair in _rooms)
             {
                 leaveMessage.Room = pair.Key;
-                try
-                {
-                    await this.AskRoomLeave(leaveMessage);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                    return;
-                }
+
+                var t = AskRoomLeave(leaveMessage);
+                tasks.Add(t);
             }
+
+            try
+            {
+                await UniTask.WhenAll(tasks);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                throw;
+            }
+            
         }
 
         public void ForceLeaveAll(bool isLocal)
@@ -201,6 +216,7 @@ namespace NeffosCSharp
                 this.FireEvent(leaveMessage);
                 leaveMessage.Event = Configuration.OnRoomLeave;
             }
+
             _rooms.Clear();
         }
 
@@ -210,8 +226,8 @@ namespace NeffosCSharp
             {
                 return;
             }
-            
-            if(!_rooms.TryGetValue(message.Room, out var room))
+
+            if (!_rooms.TryGetValue(message.Room, out var room))
             {
                 var error = this.FireEvent(message);
                 if (!string.IsNullOrEmpty(error))
@@ -220,21 +236,23 @@ namespace NeffosCSharp
                     _connection.WriteBinary(message);
                     return;
                 }
-                
+
                 _rooms.Add(message.Room, new Room(this, message.Room));
                 message.Event = Configuration.OnRoomJoined;
                 this.FireEvent(message);
             }
+
+            _connection.WriteEmptyReply(message.Wait);
         }
-        
+
         public void ReplyRoomLeave(Message message)
         {
             if (string.IsNullOrEmpty(message.Wait) || message.IsNoOp)
             {
                 return;
             }
-            
-            if(!_rooms.TryGetValue(message.Room, out var room))
+
+            if (!_rooms.TryGetValue(message.Room, out var room))
             {
                 _connection.WriteEmptyReply(message.Wait);
                 return;
@@ -243,7 +261,7 @@ namespace NeffosCSharp
             this.FireEvent(message);
             _rooms.Remove(message.Room);
             _connection.WriteEmptyReply(message.Wait);
-            
+
             message.Event = Configuration.OnRoomLeft;
             this.FireEvent(message);
         }

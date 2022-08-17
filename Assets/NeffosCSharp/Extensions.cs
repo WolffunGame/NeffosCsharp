@@ -39,7 +39,7 @@ namespace NeffosCSharp
             return null;
         }
         
-        public static NamespaceMap ResolveNamespace(ConnectionHandlerBase[] connectionHandlers, Action<string> reject)
+        public static NamespaceMap ResolveNamespace(IConnectionHandler[] connectionHandlers, Action<string> reject)
         {
             if (connectionHandlers == null || connectionHandlers.Length == 0)
             {
@@ -56,12 +56,14 @@ namespace NeffosCSharp
             for (var i = 0; i < connectionHandlers.Length; i++)
             {
                 var connectionHandler = connectionHandlers[i];
-                var events = new EventMap();
-                events.Add(connectionHandler.Key, connectionHandler.Handle);
-                events.Add(Configuration.OnNamespaceConnected, connectionHandler.OnNamespaceConnected);
-                events.Add(Configuration.OnNamespaceDisconnect, connectionHandler.OnNamespaceDisconnect);
-                events.Add(Configuration.OnRoomJoined, connectionHandler.OnRoomJoined);
-                events.Add(Configuration.OnRoomLeft, connectionHandler.OnRoomLeft);
+                var events = new EventMap
+                {
+                    {Configuration.OnAnyEvent, connectionHandler.Handle},
+                    {Configuration.OnNamespaceConnected, connectionHandler.OnNamespaceConnected},
+                    {Configuration.OnNamespaceDisconnect, connectionHandler.OnNamespaceDisconnect},
+                    {Configuration.OnRoomJoined, connectionHandler.OnRoomJoined},
+                    {Configuration.OnRoomLeft, connectionHandler.OnRoomLeft}
+                };
                 namespaces.Add(connectionHandler.Key, events);
             }
 

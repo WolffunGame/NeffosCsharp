@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using BestHTTP.WebSocket;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 namespace NeffosCSharp
 {
@@ -43,10 +45,10 @@ namespace NeffosCSharp
             _connectedNamespaces = new Dictionary<string, NSConnection>(10);
         }
 
-        public NSConnection GetNamespace(string message)
+        public NSConnection GetNamespace(string @namespace)
         {
-            if(_connectedNamespaces.ContainsKey(message))
-                return _connectedNamespaces[message];
+            if(_connectedNamespaces.ContainsKey(@namespace))
+                return _connectedNamespaces[@namespace];
             return null;
         }
 
@@ -138,12 +140,10 @@ namespace NeffosCSharp
                     ReplyDisconnect(message);
                     break;
                 case Configuration.OnRoomJoin:
-                    if (nsConnection != null)
-                        nsConnection.ReplyRoomJoin(message);
+                    nsConnection?.ReplyRoomJoin(message);
                     break;
                 case Configuration.OnRoomLeave:
-                    if (nsConnection != null)
-                        nsConnection.ReplyRoomLeave(message);
+                    nsConnection?.ReplyRoomLeave(message);
                     break;
                 default:
                     if (nsConnection == null)
@@ -153,7 +153,7 @@ namespace NeffosCSharp
 
                     message.IsLocal = false;
                     var error = nsConnection.FireEvent(message);
-                    if (string.IsNullOrEmpty(error))
+                    if (!string.IsNullOrEmpty(error))
                     {
                         message.Error = error;
                         WriteBinary(message);
