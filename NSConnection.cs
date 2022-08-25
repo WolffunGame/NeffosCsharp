@@ -45,7 +45,7 @@ namespace NeffosCSharp
             var message = new Message();
             message.Namespace = _namespace;
             message.Event = eventName;
-            message.Body = body;
+            //message.Body = body;
             return _connection.WriteNative(message);
         }
 
@@ -61,7 +61,7 @@ namespace NeffosCSharp
             var message = new Message();
             message.Namespace = _namespace;
             message.Event = eventName;
-            message.Body = body;
+            //message.Body = body;
             message.SetBinary = true;
             return _connection.WriteBinary(message);
         }
@@ -71,7 +71,7 @@ namespace NeffosCSharp
             var message = new Message();
             message.Namespace = _namespace;
             message.Event = eventName;
-            message.Body = body;
+            //message.Body = body;
             return _connection.Ask(message);
         }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -25,7 +25,7 @@ namespace NeffosCSharp
         /// <summary>
         /// The actual body of the incoming data.
         /// </summary>
-        public string Body;
+        public byte[] Body;
 
         /// <summary>
         /// The Err contains any message's error if defined and not empty.
@@ -60,17 +60,6 @@ namespace NeffosCSharp
         public bool SetBinary;
 
         public string Wait;
-
-        /// <summary>
-        /// unmarshal method returns this Message's `Body` as an object
-        /// </summary>
-        /// <returns></returns>
-        public object Unmarshal()
-        {
-            if (string.IsNullOrEmpty(Body))
-                return null;
-            return JsonConvert.DeserializeObject(Body);
-        }
 
         public bool IsConnect()
         {
@@ -134,13 +123,19 @@ namespace NeffosCSharp
                 StringUtils.EscapeMessageField(Room),
                 StringUtils.EscapeMessageField(Event),
                 isErrorString,
-                isNoOpString,
-                string.IsNullOrEmpty(Body) ? string.Empty : Body
+                isNoOpString
             );
+
             //data to byte array
-            var bytes = Encoding.UTF8.GetBytes(data);
+            var header = Encoding.UTF8.GetBytes(data);
+
+            if (Body == null)
+                Body = new byte[0];
+
+            var fullMsg = ByteUtils.Join(Configuration.messageSeparator.ToByteArray(), header, Body);
+           
             //if binary is set then add binary prefix
-            return bytes;
+            return fullMsg;
         }
 
         public string SerializeNative()
@@ -171,52 +166,54 @@ namespace NeffosCSharp
                 StringUtils.EscapeMessageField(Event),
                 isErrorString,
                 isNoOpString,
-                string.IsNullOrEmpty(Body) ? string.Empty : Body
+                Body
             );
             return data;
         }
-        public static Message Deserialize(string messageString, bool allowNativeMessage)
+        
+        public static Message Deserialize(byte[] response, bool allowNativeMessage)
         {
             var message = new Message();
-            if (string.IsNullOrEmpty(messageString))
+            if (response.Length == 0)
             {
                 message.IsInvalid = true;
                 return message;
             }
 
-            var messageParts = messageString.Split(Configuration.messageSeparator);
+            var messageParts = ByteUtils.Split(Configuration.messageSeparator.ToByteArray()[0], response);
             if (messageParts.Length != Configuration.validMessageSepCount)
             {
                 if (!allowNativeMessage)
                 {
+                    Debug.LogError("Deserialize Message with Length != Configuration.validMessageSepCount");
                     message.IsInvalid = true;
                     return message;
                 }
                 else
                 {
                     message.Event = Configuration.OnNativeMessage;
-                    message.Body = messageString;
+                    //message.Body = messageString;
                 }
             }
 
-            message.Wait = messageParts[0];
-            message.Namespace = StringUtils.UnescapeMessageField(messageParts[1]);
-            message.Room = StringUtils.UnescapeMessageField(messageParts[2]);
-            message.Event = StringUtils.UnescapeMessageField(messageParts[3]);
-            message.IsError = messageParts[4].Equals(Configuration.trueString);
-            message.IsNoOp = messageParts[5].Equals(Configuration.trueString);
+            message.Wait = messageParts[0].ToUTF8String();
+            message.Namespace = messageParts[1].ToUTF8String();
+            message.Room = messageParts[2].ToUTF8String();
+            message.Event = messageParts[3].ToUTF8String();
+            message.IsError = messageParts[4].ToUTF8String().Equals(Configuration.trueString);
+            message.IsNoOp = messageParts[5].ToUTF8String().Equals(Configuration.trueString);
 
             var body = messageParts[6];
-            if (!string.IsNullOrEmpty(body))
+            if (body.Length > 0)
             {
                 if (message.IsError)
-                    message.Error = body;
+                    message.Error = body.ToUTF8String();
                 else
                     message.Body = body;
             }
             else
             {
-                message.Body = string.Empty;
+                message.Body = body;
             }
 
             message.IsInvalid = false;
