@@ -44,9 +44,7 @@ public class DemoNeffos : MonoBehaviour
 
         _nsClient1Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
-            MatchmakingTicketProto msgProto = MatchmakingTicketProto.Parser.ParseFrom(message.Body);
-
-            Debug.Log("Player 1 Receive: " + msgProto.TicketId + "_" + msgProto.TotalTrophie + " from ");
+            Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
             return message.Error;
         };
 
@@ -64,9 +62,7 @@ public class DemoNeffos : MonoBehaviour
         _client2Room = await _nsClient2Connection.JoinRoom("Party-499");
         _nsClient2Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
-            MatchmakingTicketProto msgProto = MatchmakingTicketProto.Parser.ParseFrom(message.Body);
-
-            Debug.Log("Player 2 Receive: " + msgProto.TicketId + "_" + msgProto.TotalTrophie + " from ");
+            Debug.Log("Player 2 Receive: " + message.Body.ToUTF8String() + " from ");
             return message.Error;
         };
     }
@@ -90,20 +86,13 @@ public class DemoNeffos : MonoBehaviour
             var random = new System.Random();
 
             //random a string 300 characters long
-            //string message = new string(
-            //    Enumerable.Repeat(seed, 300)
-            //        .Select(s => s[random.Next(s.Length)])
-            //        .ToArray());
+            string message = new string(
+                Enumerable.Repeat(seed, 300)
+                    .Select(s => s[random.Next(s.Length)])
+                    .ToArray());
 
-            MatchmakingTicketProto matchmakingTicketProto = new MatchmakingTicketProto()
-            {
-                TicketId = "a",
-                TotalTrophie = 300
-            };
-            
-            var msgByteArray = matchmakingTicketProto.ToByteArray();
 
-            _client1Room.Emit("TestEvent", msgByteArray);
+            _client1Room.Emit("TestEvent", message);
         }
 
         if (GUILayout.Button("Client 2 Send Message"))
