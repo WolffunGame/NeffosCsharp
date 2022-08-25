@@ -1,5 +1,7 @@
 using System.Linq;
+using System.Text;
 using Cysharp.Threading.Tasks;
+using Google.Protobuf;
 using NeffosCSharp;
 using NeffosCSharp.ConnectionHandles;
 using UnityEngine;
@@ -12,7 +14,7 @@ public class DemoNeffos : MonoBehaviour
 
     public string keyClient2 = "Bearer";
 
-    public string @namespace = "Game";
+    public string @namespace = "Test";
 
     private Connection _client1Connection;
     private Connection _client2Connection;
@@ -42,7 +44,9 @@ public class DemoNeffos : MonoBehaviour
 
         _nsClient1Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
-            Debug.Log("Player 1 Receive: " + message.Body);
+            MatchmakingTicketProto msgProto = MatchmakingTicketProto.Parser.ParseFrom(message.Body);
+
+            Debug.Log("Player 1 Receive: " + msgProto.TicketId + "_" + msgProto.TotalTrophie + " from ");
             return message.Error;
         };
 
@@ -60,7 +64,9 @@ public class DemoNeffos : MonoBehaviour
         _client2Room = await _nsClient2Connection.JoinRoom("Party-499");
         _nsClient2Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
-            Debug.Log("Player 2 Receive: " + message.Body + " from ");
+            MatchmakingTicketProto msgProto = MatchmakingTicketProto.Parser.ParseFrom(message.Body);
+
+            Debug.Log("Player 2 Receive: " + msgProto.TicketId + "_" + msgProto.TotalTrophie + " from ");
             return message.Error;
         };
     }
@@ -84,17 +90,26 @@ public class DemoNeffos : MonoBehaviour
             var random = new System.Random();
 
             //random a string 300 characters long
-            string message = new string(
-                Enumerable.Repeat(seed, 300)
-                    .Select(s => s[random.Next(s.Length)])
-                    .ToArray());
-            _client1Room.Emit("Say", message);
+            //string message = new string(
+            //    Enumerable.Repeat(seed, 300)
+            //        .Select(s => s[random.Next(s.Length)])
+            //        .ToArray());
+
+            MatchmakingTicketProto matchmakingTicketProto = new MatchmakingTicketProto()
+            {
+                TicketId = "a",
+                TotalTrophie = 300
+            };
+            
+            var msgByteArray = matchmakingTicketProto.ToByteArray();
+
+            _client1Room.Emit("TestEvent", msgByteArray);
         }
 
         if (GUILayout.Button("Client 2 Send Message"))
         {
             string random = UnityEngine.Random.Range(100, 1000000).ToString();
-            _client2Room.Emit("Say", random);
+            _client2Room.Emit("TestEvent", random);
         }
 
         if (GUILayout.Button("Login"))

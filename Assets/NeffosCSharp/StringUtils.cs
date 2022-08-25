@@ -12,6 +12,12 @@ namespace NeffosCSharp
         {
             return Encoding.UTF8.GetBytes(str);
         }
+
+        public static string ToUTF8String(this byte[] value)
+        {
+            return Encoding.UTF8.GetString(value);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string EscapeMessageField(string message)
         {

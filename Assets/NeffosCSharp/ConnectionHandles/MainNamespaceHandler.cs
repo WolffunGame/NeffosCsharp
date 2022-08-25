@@ -4,7 +4,7 @@ namespace NeffosCSharp.ConnectionHandles
 {
     public class MainNamespaceHandler : IConnectionHandler
     {
-        public string Key => "Game";
+        public string Key => "Test";
 
         public string OnNamespaceConnected(NSConnection connection, Message message)
         {
