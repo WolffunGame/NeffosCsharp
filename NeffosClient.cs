@@ -70,7 +70,7 @@ namespace NeffosCSharp
 
             void OnMessage(WebSocket webSocket, string message)
             {
-                var error = connection.Handle(message);
+                var error = connection.Handle(message.ToByteArray());
                 if (error != null)
                 {
                     ucs.TrySetException(new Exception(error));
@@ -83,8 +83,7 @@ namespace NeffosCSharp
             void OnBinary(WebSocket webSocket, byte[] data)
             {
                 //encode data to string
-                var message = Encoding.UTF8.GetString(data);
-                var error = connection.Handle(message);
+                var error = connection.Handle(data);
                 if (error != null)
                 {
                     ucs.TrySetException(new Exception(error));

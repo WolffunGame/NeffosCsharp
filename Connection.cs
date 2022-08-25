@@ -22,7 +22,7 @@ namespace NeffosCSharp
         
         private Dictionary<string, Action> _waitServerConnectNotifiers;
 
-        private List<string> _queue;
+        private List<byte[]> _queue;
         private Dictionary<string, Action<Message>> _waitingMessages;
         private NamespaceMap _namespaces;
         private Dictionary<string, NSConnection> _connectedNamespaces;
@@ -40,13 +40,16 @@ namespace NeffosCSharp
             _allowNativeMessages =
                 hasEmptyNamespace && _namespaces[string.Empty].ContainsKey(Configuration.OnNativeMessage);
 
-            _queue = new List<string>();
+            _queue = new List<byte[]>();
             _waitingMessages = new Dictionary<string, Action<Message>>(10);
             _connectedNamespaces = new Dictionary<string, NSConnection>(10);
         }
 
         public NSConnection GetNamespace(string @namespace)
         {
+            if (@namespace == null)
+                return null;
+
             if(_connectedNamespaces.ContainsKey(@namespace))
                 return _connectedNamespaces[@namespace];
             return null;
@@ -54,7 +57,7 @@ namespace NeffosCSharp
 
         public bool WasReconnected => _reconnectionAttempts > 0;
 
-        public string Handle(string response)
+        public string Handle(byte[] response)
         {
             if (!_isAcknowledged)
             {
@@ -73,9 +76,11 @@ namespace NeffosCSharp
 
             return HandleMessage(response);
         }
-        
-        private string HandleAck(string data)
+
+        private string HandleAck(byte[] response)
         {
+            var data = Encoding.UTF8.GetString(response);
+
             var typ = data[0];
             switch (typ)
             {
@@ -87,7 +92,7 @@ namespace NeffosCSharp
                     var errorText = data.Substring(1);
                     return errorText;
                 default:
-                    _queue.Add(data);
+                    _queue.Add(response);
                     break;
             }
             return null;
@@ -109,7 +114,7 @@ namespace NeffosCSharp
             }
         }
 
-        private string HandleMessage(string data)
+        private string HandleMessage(byte[] data)
         {
             var message = Message.Deserialize(data, this._allowNativeMessages);
             if (message == null)
