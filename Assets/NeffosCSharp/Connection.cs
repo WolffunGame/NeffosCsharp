@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using BestHTTP.WebSocket;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace NeffosCSharp
@@ -117,6 +118,11 @@ namespace NeffosCSharp
         private string HandleMessage(byte[] data)
         {
             var message = Message.Deserialize(data, this._allowNativeMessages);
+
+#if ALL_LOG
+            Debug.Log("Handle Message " + JsonConvert.SerializeObject(message));
+#endif
+
             if (message == null)
             {
                 return Exceptions.ErrorInvalidPayLoad;
