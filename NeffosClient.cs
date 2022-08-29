@@ -71,7 +71,7 @@ namespace NeffosCSharp
             void OnMessage(WebSocket webSocket, string message)
             {
                 var error = connection.Handle(message.ToByteArray());
-                if (error != null)
+                if (!string.IsNullOrEmpty(error))
                 {
                     ucs.TrySetException(new Exception(error));
                 }
@@ -84,7 +84,7 @@ namespace NeffosCSharp
             {
                 //encode data to string
                 var error = connection.Handle(data);
-                if (error != null)
+                if (!string.IsNullOrEmpty(error))
                 {
                     ucs.TrySetException(new Exception(error));
                 }

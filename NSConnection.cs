@@ -45,7 +45,7 @@ namespace NeffosCSharp
             var message = new Message();
             message.Namespace = _namespace;
             message.Event = eventName;
-            //message.Body = body;
+            message.Body = body.ToByteArray();
             return _connection.WriteNative(message);
         }
 
@@ -56,22 +56,27 @@ namespace NeffosCSharp
         /// <param name="eventName"></param>
         /// <param name="body"></param>
         /// <returns></returns>
-        public bool EmitBinary(string eventName, string body)
+        public bool EmitBinary(string eventName, byte[] body)
         {
             var message = new Message();
             message.Namespace = _namespace;
             message.Event = eventName;
-            //message.Body = body;
+            message.Body = body;
             message.SetBinary = true;
             return _connection.WriteBinary(message);
         }
 
         public UniTask<Message> Ask(string eventName, string body)
         {
+            return Ask(eventName, body.ToByteArray());
+        }
+
+        public UniTask<Message> Ask(string eventName, byte[] body)
+        {
             var message = new Message();
             message.Namespace = _namespace;
             message.Event = eventName;
-            //message.Body = body;
+            message.Body = body;
             return _connection.Ask(message);
         }
 

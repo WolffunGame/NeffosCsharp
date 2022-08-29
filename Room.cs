@@ -7,6 +7,8 @@ namespace NeffosCSharp
     {
         private NSConnection _nsConnection;
         private string _name;
+
+        public string Name => _name;
         
         public Room(NSConnection nsConnection, string name)
         {
@@ -20,18 +22,35 @@ namespace NeffosCSharp
             message.Event = eventName;
             message.Namespace = _nsConnection.Namespace;
             message.Room = _name;
-            message.Body = Encoding.UTF8.GetBytes(body);
+            message.Body = body.ToByteArray();
             return _nsConnection.Connection.WriteBinary(message);
         }
 
-        public bool Emit(string eventName, byte[] data)
+        public bool EmitBinary(string eventName, byte[] data)
         {
             var message = new Message();
             message.Event = eventName;
             message.Namespace = _nsConnection.Namespace;
             message.Room = _name;
             message.Body = data;
+
             return _nsConnection.Connection.WriteBinary(message);
+        }
+
+        public UniTask<Message> AskBinary(string eventName, byte[] data)
+        {
+            var message = new Message();
+            message.Event = eventName;
+            message.Namespace = _nsConnection.Namespace;
+            message.Room = _name;
+            message.Body = data;
+
+            return _nsConnection.Connection.Ask(message);
+        }
+
+        public UniTask<Message> Ask(string eventName, string data)
+        {
+            return AskBinary(eventName, data.ToByteArray());
         }
 
         public UniTask Leave()
@@ -42,5 +61,7 @@ namespace NeffosCSharp
             message.Room = _name;
             return _nsConnection.AskRoomLeave(message);
         }
+
+
     }
 }
