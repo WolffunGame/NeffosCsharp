@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using NeffosCSharp.ConnectionHandles;
 using UnityEngine;
 
+
 namespace NeffosCSharp
 {
     public class NeffosClient : IDisposable
@@ -13,189 +14,125 @@ namespace NeffosCSharp
         const string WebsocketReconnectHeaderKey = "X-Websocket-Reconnect";
 
         public string Key { get; set; }
+        
+        public Action OutOfReconnectAttempts { get; set; }
+        private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
+        private Connection _connection;
+        
+
+        private readonly Options _options;
+        private readonly string _endPoint;
+        private readonly IConnectionHandler[] _connectionHandlers;
+
+
+        public NeffosClient(string endPoint, Options options, params IConnectionHandler[] connectionHandlers)
+        {
+            _endPoint = endPoint;
+            _options = options;
+            _connectionHandlers = connectionHandlers;
+        }
 
         //dial with connection handler
-        public UniTask<Connection> DialAsync(string endPoint, IConnectionHandler[] connectionHandlers,
-            Options options, Action<string> reject)
+        public UniTask<Connection> DialAsync(Action<string> reject)
         {
-            var ucs = new UniTaskCompletionSource<Connection>();
-
-            var namespaces = NamespacesExtensions.ResolveNamespace(connectionHandlers, reject);
+            ConnectionTcs = new UniTaskCompletionSource<Connection>();
+            var namespaces = NamespacesExtensions.ResolveNamespace(_connectionHandlers, reject);
 
             if (namespaces == null || namespaces.Count == 0)
             {
-                ucs.TrySetException(new Exception("No connection handlers found"));
-                return ucs.Task;
+                ConnectionTcs.TrySetException(new Exception("No connection handlers found"));
             }
+            
+            if (!_options.Headers.ContainsKey("Authorization"))
+                _options.Headers.Add("Authorization", Key);
 
-            if (options.Headers == null)
-                options.Headers = new Dictionary<string, string>();
-            if (!options.Headers.ContainsKey("Authorization"))
-                options.Headers.Add("Authorization", Key);
-
-            if (options.ReconnectionAttempts > 0)
+            if (_options.ReconnectionAttempts > 0)
             {
-                if (!options.Headers.ContainsKey(WebsocketReconnectHeaderKey))
-                    options.Headers.Add(WebsocketReconnectHeaderKey, options.ReconnectionAttempts.ToString());
+                if (!_options.Headers.ContainsKey(WebsocketReconnectHeaderKey))
+                    _options.Headers.Add(WebsocketReconnectHeaderKey, _options.ReconnectionAttempts.ToString());
             }
-            else if (options.Headers.ContainsKey(WebsocketReconnectHeaderKey))
+            else if (_options.Headers.ContainsKey(WebsocketReconnectHeaderKey))
             {
-                options.Headers.Remove(WebsocketReconnectHeaderKey);
+                _options.Headers.Remove(WebsocketReconnectHeaderKey);
             }
 
-            var ws = new WebSocket(new Uri(endPoint));
+            var webSocket = new WebSocket(new Uri(_endPoint));
 #if !UNITY_WEBGL || UNITY_EDITOR
-            ws.StartPingThread = true;
+            webSocket.StartPingThread = true;
 
 #if !BESTHTTP_DISABLE_PROXY
             if (HTTPManager.Proxy != null)
-                ws.OnInternalRequestCreated = (ws, internalRequest) =>
+                webSocket.OnInternalRequestCreated = (ws, internalRequest) =>
                     internalRequest.Proxy =
                         new HTTPProxy(HTTPManager.Proxy.Address, HTTPManager.Proxy.Credentials, false);
 #endif
 #endif
-            ws.OnInternalRequestCreated += (sender, e) =>
+            webSocket.OnInternalRequestCreated += (sender, e) =>
             {
-                foreach (var header in options.Headers)
+                foreach (var header in _options.Headers)
                 {
                     e.AddHeader(header.Key, header.Value);
                 }
             };
-            var connection = new Connection(ws, namespaces);
+            _connection = new Connection(webSocket, namespaces);
 
-            ws.OnMessage += OnMessage;
-            ws.OnBinary += OnBinary;
-            ws.OnError += OnError;
-            ws.OnClosed += OnClosed;
-            ws.OnOpen += OnOpen;
+            webSocket.OnMessage += OnMessage;
+            webSocket.OnBinary += OnBinary;
+            webSocket.OnError += OnError;
+            webSocket.OnClosed += OnClosed;
+            webSocket.OnOpen += OnOpen;
 
-            ws.Open();
-
-            void OnMessage(WebSocket webSocket, string message)
-            {
-                var error = connection.Handle(message.ToByteArray());
-                if (!string.IsNullOrEmpty(error))
-                {
-                    ucs.TrySetException(new Exception(error));
-                }
-
-                if (connection.IsAcknowledged)
-                    ucs.TrySetResult(connection);
-            }
-
-            void OnBinary(WebSocket webSocket, byte[] data)
-            {
-                //encode data to string
-                var error = connection.Handle(data);
-                if (!string.IsNullOrEmpty(error))
-                {
-                    ucs.TrySetException(new Exception(error));
-                }
-
-                if (connection.IsAcknowledged)
-                    ucs.TrySetResult(connection);
-            }
-
-            void OnError(WebSocket webSocket, string exception)
-            {
-                if (!connection.Closed)
-                {
-                    webSocket.OnMessage -= OnMessage;
-                    webSocket.OnBinary -= OnBinary;
-                    webSocket.OnError -= OnError;
-                    webSocket.OnClosed -= OnClosed;
-                    webSocket.OnInternalRequestCreated = null;
-                }
-
-                //log
-                Debug.Log("reconnecting on error...");
-
-                if (options.ReconnectionAttempts <= 0)
-                {
-                    connection.Close();
-                }
-
-                var previouslyConnectedNamespacesNamesOnly = new Dictionary<string, List<string>>();
-                foreach (var p in connection.ConnectedNamespaces)
-                {
-                    var previouslyJoinedRooms = new List<string>();
-                    if (p.Value.Rooms.Count > 0)
-                    {
-                        foreach (var r in p.Value.Rooms)
-                        {
-                            previouslyJoinedRooms.Add(r.Key);
-                        }
-                    }
-
-                    previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
-                }
-
-                connection.Close();
-
-                WhenResourceOnline(endPoint, 10,
-                    async _ =>
-                    {
-                        var newConnection = await DialAsync(endPoint, connectionHandlers, options, reject);
-                        //var newConnection = new Connection(ws, namespaces);
-                        ConnectToNamespace(previouslyConnectedNamespacesNamesOnly, newConnection).Forget();
-                    }).Forget();
-            }
-
-            void OnClosed(WebSocket webSocket, ushort code, string reason)
-            {
-                if (!connection.Closed)
-                {
-                    webSocket.OnMessage -= OnMessage;
-                    webSocket.OnBinary -= OnBinary;
-                    webSocket.OnError -= OnError;
-                    webSocket.OnClosed -= OnClosed;
-                    webSocket.OnInternalRequestCreated = null;
-                }
-
-                //log
-                Debug.Log("reconnecting on closed...");
-
-                if (options.ReconnectionAttempts <= 0)
-                {
-                    connection.Close();
-                }
-
-                var previouslyConnectedNamespacesNamesOnly = new Dictionary<string, List<string>>();
-                var previousNsConnections = connection.ConnectedNamespaces.Values;
-                foreach (var p in connection.ConnectedNamespaces)
-                {
-                    var previouslyJoinedRooms = new List<string>();
-                    if (p.Value.Rooms.Count > 0)
-                    {
-                        foreach (var r in p.Value.Rooms)
-                        {
-                            previouslyJoinedRooms.Add(r.Key);
-                        }
-                    }
-
-                    previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
-                }
-
-                connection.Close();
-
-                WhenResourceOnline(endPoint, 10,
-                    _ =>
-                    {
-                        //DialAsync(endPoint, connectionHandlers, options, reject).Forget();
-                        var newConnection = new Connection(ws, namespaces);
-                        ConnectToNamespace(previouslyConnectedNamespacesNamesOnly, newConnection).Forget();
-                    }).Forget();
-            }
-
-            void OnOpen(WebSocket websocket)
-            {
-                ws.Send(Configuration.ackBinary);
-            }
-
-            return ucs.Task;
+            webSocket.Open();
+            //wait for acknowledged
+            return ConnectionTcs.Task;
         }
-        private bool _isOnline = false;
-        private async UniTask WhenResourceOnline(string endPoint, int checkEvery, Action<int> nofifyOnline)
+
+        void OnMessage(WebSocket webSocket, string message)
+        {
+            if (_connection == null)
+            {
+                throw new Exception("Connection is null");
+            }
+
+            var error = _connection.Handle(message.ToByteArray());
+            if (!string.IsNullOrEmpty(error))
+            {
+                throw new Exception(error);
+            }
+
+            if (_connection.IsAcknowledged)
+                ConnectionTcs.TrySetResult(_connection);
+        }
+
+        void OnBinary(WebSocket webSocket, byte[] data)
+        {
+            //encode data to string
+            var error = _connection.Handle(data);
+            if (!string.IsNullOrEmpty(error))
+            {
+                throw new Exception(error);
+            }
+
+            if (_connection.IsAcknowledged)
+                ConnectionTcs.TrySetResult(_connection);
+        }
+
+        void OnError(WebSocket webSocket, string exception)
+        {
+            Reconnect(webSocket).Forget();
+        }
+
+        void OnClosed(WebSocket webSocket, ushort code, string reason)
+        {
+            Reconnect(webSocket).Forget();
+        }
+
+        void OnOpen(WebSocket websocket)
+        {
+            websocket.Send(Configuration.ackBinary);
+        }
+
+        private async UniTask<bool> WhenResourceOnline(string endPoint, float checkEvery)
         {
             // Don't fire webscoket requests just yet.
             // We check if the HTTP endpoint is alive with a simple fetch, if it is alive then we notify the caller
@@ -205,36 +142,31 @@ namespace NeffosCSharp
             // Chrome itself is emitting net::ERR_CONNECTION_REFUSED and the final Bad Request messages to the console on network failures on fetch,
             // there is no way to block them programmatically, we could do a console.clear but this will clear any custom logging the end-dev may has too.
             int tries = 1;
-
+            
             var endpoint = endPoint.Replace("ws://", "http://").Replace("wss://", "https://");
             Retry:
-            _isOnline = false;
 
             //check if endpoint is online
-            var request = new HTTPRequest(new Uri(endpoint), (req, resp) =>
+            var request = new HTTPRequest(new Uri(endpoint));
+            await request.Send();
+
+            if (request.State == HTTPRequestStates.Finished)
             {
-                if (resp != null)
+                if (request.Response != null)
                 {
-                    _isOnline = true;
-                    nofifyOnline(tries);
-                    //log
-                    Debug.Log($"<color=red>Neffos: Resource is online, tries: {tries}</color>");
+                    return true;
                 }
-                else
-                {
-                    //log
-                    Debug.Log("<color=red>response failed</color>");
-                }
-            });
-            request.Send();
+            }
+            else
+            {
+                Debug.Log($"[{nameof(NeffosClient)}] Trying to reconnect but failed {request.Exception}");
+            }
 
             //timeout
             await UniTask.Delay(TimeSpan.FromSeconds(checkEvery));
-            if (tries >= 5 || _isOnline)
+            if (tries >= _options.ReconnectionAttempts)
             {
-                //log
-                Debug.Log("tries >= 5 return");
-                return;
+                return false;
             }
 
             tries++;
@@ -246,16 +178,66 @@ namespace NeffosCSharp
         {
             foreach (var (key, value) in previouslyConnectedNamespacesNamesOnly)
             {
-                var newNsConn = await connection.AskConnect(key);
-                //log
-                Debug.Log($"Neffos: Reconnecting to namespaces: {key}");
+                var newNsConn = await connection.Connect(key);
                 foreach (var room in value)
                 {
                     await newNsConn.JoinRoom(room);
-                    //log
-                    Debug.Log($"Neffos: Reconnecting to rooms: {room}");
                 }
             }
+        }
+
+        // reconnection is NOT allowed when:
+        // 1. server force-disconnect this client.
+        // 2. client disconnects itself manually.
+        // We check those two ^ with conn.isClosed().
+        public async UniTask Reconnect(WebSocket webSocket)
+        {
+            if (!_connection.Closed)
+            {
+                webSocket.OnMessage -= OnMessage;
+                webSocket.OnBinary -= OnBinary;
+                webSocket.OnError -= OnError;
+                webSocket.OnClosed -= OnClosed;
+                webSocket.OnOpen -= OnOpen;
+                webSocket.OnInternalRequestCreated = null;
+            }
+
+            //log
+            Debug.Log("reconnecting...");
+
+            if (_options.ReconnectionAttempts <= 0)
+            {
+                _connection.Close();
+            }
+
+            var previouslyConnectedNamespacesNamesOnly = new Dictionary<string, List<string>>();
+            foreach (var p in _connection.ConnectedNamespaces)
+            {
+                var previouslyJoinedRooms = new List<string>();
+                if (p.Value.Rooms.Count > 0)
+                {
+                    foreach (var r in p.Value.Rooms)
+                    {
+                        previouslyJoinedRooms.Add(r.Key);
+                    }
+                }
+
+                previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
+            }
+
+            _connection.Close();
+
+            var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
+            if (isOnline)
+            {
+                var newConnection = await DialAsync(Debug.LogError);
+                await ConnectToNamespace(previouslyConnectedNamespacesNamesOnly, newConnection);
+            }
+            else
+            {
+                OutOfReconnectAttempts?.Invoke();
+            }
+
         }
 
         public void Dispose()
