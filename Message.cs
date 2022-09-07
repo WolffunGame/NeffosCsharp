@@ -180,7 +180,7 @@ namespace NeffosCSharp
                 return message;
             }
 
-            var messageParts = ByteUtils.Split(Configuration.messageSeparator.ToByteArray()[0], response);
+            var messageParts = ByteUtils.Split(Configuration.messageSeparator.ToByteArray()[0], response, Configuration.validMessageSepCount);
             if (messageParts.Length != Configuration.validMessageSepCount)
             {
                 if (!allowNativeMessage)
