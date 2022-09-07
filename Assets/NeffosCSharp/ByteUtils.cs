@@ -37,7 +37,7 @@ namespace NeffosCSharp
             return result;
         }
 
-        public static byte[][] Split(byte seperateByte, byte[] value)
+        public static byte[][] Split(byte seperateByte, byte[] value, int maxSplitLenght = int.MaxValue)
         {
             List<byte[]> result = new List<byte[]>();
 
@@ -45,7 +45,7 @@ namespace NeffosCSharp
 
             foreach(var element in value)
             {
-                if(element != seperateByte)
+                if(element != seperateByte || result.Count >= maxSplitLenght - 1)
                 {
                     currentChunk.Add(element);
                 }
