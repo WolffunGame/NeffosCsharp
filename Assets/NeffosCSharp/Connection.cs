@@ -117,11 +117,11 @@ namespace NeffosCSharp
 
         private string HandleMessage(byte[] data)
         {
+#if ALL_LOG
+            Debug.Log("Handle Message " + JsonConvert.SerializeObject(data.ToUTF8String()));
+#endif
             var message = Message.Deserialize(data, this._allowNativeMessages);
 
-#if ALL_LOG
-            Debug.Log("Handle Message " + JsonConvert.SerializeObject(message));
-#endif
 
             if (message == null)
             {
