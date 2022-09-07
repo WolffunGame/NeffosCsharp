@@ -21,43 +21,21 @@ public class DemoNeffos : MonoBehaviour
 
     private Room _client1Room;
 
-    private NeffosClientA client1;
+    private NeffosClient client1;
 
-    async void DemoConnection()
-    {
-        var client1 = new NeffosClient();
-        client1.Key = keyClient1;
-        var chatServiceHandler = new MainNamespaceHandler();
 
-        _client1Connection = await client1.DialAsync(URL,
-            new IConnectionHandler[]
-            {
-                chatServiceHandler
-            },
-            new Options(){ReconnectionAttempts = 5}, s => { Debug.Log("rejected reason: " + s); });
-
-        _nsClient1Connection = await _client1Connection.Connect(@namespace);
-
-        _client1Room = await _nsClient1Connection.JoinRoom("Party-499");
-
-        _nsClient1Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
-        {
-            Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
-            return message.Error;
-        };
-    }
 
     async void DemoConnectionA()
     {
         var chatServiceHandler = new MainNamespaceHandler();
-        var option = new Options() {ReconnectionAttempts = 5};
-        client1 = new NeffosClientA(URL, option, chatServiceHandler);
+        var option = new Options(3, 10f);
+        client1 = new NeffosClient(URL, option, chatServiceHandler);
         client1.Key = keyClient1;
+        client1.OutOfReconnectAttempts = () => { Debug.Log("OutOfReconnectAttempts"); };
 
-
-        client1.Dial(Debug.LogError);
-        await UniTask.Delay(1000);
-        _nsClient1Connection = await client1.Connection.Connect(@namespace);
+        _client1Connection = await client1.DialAsync(Debug.LogError);
+        
+        _nsClient1Connection = await _client1Connection.Connect(@namespace);
 
         _client1Room = await _nsClient1Connection.JoinRoom("Party-499");
 

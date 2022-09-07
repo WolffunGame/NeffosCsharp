@@ -4,11 +4,20 @@ using System.Text;
 
 namespace NeffosCSharp
 {
-    public class Options
+    public struct Options
     {
-        public Dictionary<string, string> Headers { get; set; }
-        public string[] Protocols { get; set; }
-        public int ReconnectionAttempts { get; set; }
+        public Dictionary<string, string> Headers;
+        //public string[] Protocols;
+        public int ReconnectionAttempts;
+
+        public float ReconnectEvery;
+        
+        public Options(int reconnectionAttempts, float reconnectEvery)
+        {
+            Headers = new Dictionary<string, string>();
+            ReconnectionAttempts = reconnectionAttempts;
+            ReconnectEvery = reconnectEvery;
+        }
 
         private const string URLParamAsHeaderPrefix = "X-Websocket-Header-";
         public string ParseHeadersAsUrlParameters(string url)
