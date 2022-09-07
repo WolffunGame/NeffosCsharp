@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Text;
 using Cysharp.Threading.Tasks;
-using Google.Protobuf;
 using NeffosCSharp;
 using NeffosCSharp.ConnectionHandles;
 using UnityEngine;
@@ -17,27 +16,25 @@ public class DemoNeffos : MonoBehaviour
     public string @namespace = "Test";
 
     private Connection _client1Connection;
-    private Connection _client2Connection;
 
     private NSConnection _nsClient1Connection;
-    private NSConnection _nsClient2Connection;
 
     private Room _client1Room;
-    private Room _client2Room;
 
-    async void DemoConnection()
+    private NeffosClient client1;
+
+
+
+    async void DemoConnectionA()
     {
-        var client1 = new NeffosClient();
-        client1.Key = keyClient1;
         var chatServiceHandler = new MainNamespaceHandler();
+        var option = new Options(3, 10f);
+        client1 = new NeffosClient(URL, option, chatServiceHandler);
+        client1.Key = keyClient1;
+        client1.OutOfReconnectAttempts = () => { Debug.Log("OutOfReconnectAttempts"); };
 
-        _client1Connection = await client1.DialAsync(URL,
-            new IConnectionHandler[]
-            {
-                chatServiceHandler
-            },
-            new Options(), s => { Debug.Log("rejected reason: " + s); });
-
+        _client1Connection = await client1.DialAsync(Debug.LogError);
+        
         _nsClient1Connection = await _client1Connection.Connect(@namespace);
 
         _client1Room = await _nsClient1Connection.JoinRoom("Party-499");
@@ -47,35 +44,16 @@ public class DemoNeffos : MonoBehaviour
             Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
             return message.Error;
         };
-
-        var client2 = new NeffosClient();
-        client2.Key = keyClient2;
-        var chatServiceHandler2 = new MainNamespaceHandler();
-        _client2Connection = await client2.DialAsync(URL,
-            new IConnectionHandler[]
-            {
-                chatServiceHandler2
-            },
-            new Options(), s => { Debug.Log("rejected reason: " + s); });
-
-        _nsClient2Connection = await _client2Connection.Connect(@namespace);
-        _client2Room = await _nsClient2Connection.JoinRoom("Party-499");
-        _nsClient2Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
-        {
-            Debug.Log("Player 2 Receive: " + message.Body.ToUTF8String() + " from ");
-            return message.Error;
-        };
     }
 
     private void Start()
     {
-        DemoConnection();
+        DemoConnectionA();
     }
 
     private void OnDestroy()
     {
         _client1Connection?.Close();
-        _client2Connection?.Close();
     }
 
     private void OnGUI()
@@ -94,12 +72,7 @@ public class DemoNeffos : MonoBehaviour
 
             _client1Room.Emit("TestEvent", message);
         }
-
-        if (GUILayout.Button("Client 2 Send Message"))
-        {
-            string random = UnityEngine.Random.Range(100, 1000000).ToString();
-            _client2Room.Emit("TestEvent", random);
-        }
+        
 
         if (GUILayout.Button("Login"))
         {
@@ -124,6 +97,11 @@ public class DemoNeffos : MonoBehaviour
         if(GUILayout.Button("Client 1 Leave Room Party-499"))
         {
             _client1Room.Leave().Forget();
+        }
+        
+        if (GUILayout.Button("Create Party Room"))
+        {
+            _nsClient1Connection.Ask("CreatePartyRoom", string.Empty).Forget();
         }
     }
 }
