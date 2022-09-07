@@ -10,11 +10,18 @@ namespace NeffosCSharp
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] ToByteArray(this string str)
         {
+            if(str == null)
+                return null;
             return Encoding.UTF8.GetBytes(str);
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string ToUTF8String(this byte[] value)
         {
+            if (value == null)
+            {
+                return null;
+            }
             return Encoding.UTF8.GetString(value);
         }
 
