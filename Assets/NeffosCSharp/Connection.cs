@@ -11,7 +11,7 @@ namespace NeffosCSharp
     public class Connection
     {
         private readonly WebSocket _webSocket;
-        private int _reconnectionAttempts;
+        public int ReconnectTries { get; set; }
         private bool _isAcknowledged;
         public bool IsAcknowledged => _isAcknowledged;
         
@@ -34,7 +34,7 @@ namespace NeffosCSharp
             _webSocket = webSocket;
             _namespaces = namespaces;
             _isAcknowledged = false;
-            _reconnectionAttempts = 0;
+            ReconnectTries = 0;
             _closed = false;
 
             var hasEmptyNamespace = _namespaces.ContainsKey(string.Empty);
@@ -56,7 +56,7 @@ namespace NeffosCSharp
             return null;
         }
 
-        public bool WasReconnected => _reconnectionAttempts > 0;
+        public bool WasReconnected => ReconnectTries > 0;
 
         public string Handle(byte[] response)
         {
