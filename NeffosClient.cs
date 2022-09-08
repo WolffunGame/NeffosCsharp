@@ -78,6 +78,7 @@ namespace NeffosCSharp
                 }
             };
             _connection = new Connection(webSocket, namespaces);
+            _connection.ReconnectTries = _options.ReconnectionAttempts;
 
             webSocket.OnMessage += OnMessage;
             webSocket.OnBinary += OnBinary;
@@ -216,6 +217,10 @@ namespace NeffosCSharp
                 webSocket.OnClosed -= OnClosed;
                 webSocket.OnOpen -= OnOpen;
                 webSocket.OnInternalRequestCreated = null;
+            }
+            else
+            {
+                return;
             }
 
             //log
