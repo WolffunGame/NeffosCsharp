@@ -15,10 +15,12 @@ namespace NeffosCSharp
 
         public string Key { get; set; }
         
-        public Action OutOfReconnectAttempts { get; set; }
+        public AsyncReactiveProperty<NeffosClientState> State { get; } =
+            new AsyncReactiveProperty<NeffosClientState>(NeffosClientState.UnKnown);
+
         private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
         private Connection _connection;
-        
+
 
         private readonly Options _options;
         private readonly string _endPoint;
@@ -35,6 +37,7 @@ namespace NeffosCSharp
         //dial with connection handler
         public UniTask<Connection> DialAsync(Action<string> reject)
         {
+            State.Value = NeffosClientState.Connecting;
             ConnectionTcs = new UniTaskCompletionSource<Connection>();
             var namespaces = NamespacesExtensions.ResolveNamespace(_connectionHandlers, reject);
 
@@ -42,7 +45,7 @@ namespace NeffosCSharp
             {
                 ConnectionTcs.TrySetException(new Exception("No connection handlers found"));
             }
-            
+
             if (!_options.Headers.ContainsKey("Authorization"))
                 _options.Headers.Add("Authorization", Key);
 
@@ -101,7 +104,13 @@ namespace NeffosCSharp
             }
 
             if (_connection.IsAcknowledged)
-                ConnectionTcs.TrySetResult(_connection);
+            {
+                var s = ConnectionTcs.TrySetResult(_connection);
+                if (s)
+                {
+                    State.Value = NeffosClientState.Connected;
+                }
+            }
         }
 
         void OnBinary(WebSocket webSocket, byte[] data)
@@ -114,7 +123,13 @@ namespace NeffosCSharp
             }
 
             if (_connection.IsAcknowledged)
-                ConnectionTcs.TrySetResult(_connection);
+            {
+                var s = ConnectionTcs.TrySetResult(_connection);
+                if (s)
+                {
+                    State.Value = NeffosClientState.Connected;
+                }
+            }
         }
 
         void OnError(WebSocket webSocket, string exception)
@@ -142,6 +157,7 @@ namespace NeffosCSharp
             // Chrome itself is emitting net::ERR_CONNECTION_REFUSED and the final Bad Request messages to the console on network failures on fetch,
             // there is no way to block them programmatically, we could do a console.clear but this will clear any custom logging the end-dev may has too.
             int tries = 1;
+            State.Value = NeffosClientState.Reconnecting;
             
             var endpoint = endPoint.Replace("ws://", "http://").Replace("wss://", "https://");
             Retry:
@@ -235,9 +251,8 @@ namespace NeffosCSharp
             }
             else
             {
-                OutOfReconnectAttempts?.Invoke();
+                State.Value = NeffosClientState.Offline;
             }
-
         }
 
         public void Dispose()
