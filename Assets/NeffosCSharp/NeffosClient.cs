@@ -17,6 +17,7 @@ namespace NeffosCSharp
         
         public AsyncReactiveProperty<NeffosClientState> State { get; } =
             new AsyncReactiveProperty<NeffosClientState>(NeffosClientState.UnKnown);
+        public Connection Connection => _connection;
 
         private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
         private Connection _connection;

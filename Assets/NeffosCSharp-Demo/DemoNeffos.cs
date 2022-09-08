@@ -24,7 +24,17 @@ public class DemoNeffos : MonoBehaviour
 
     private NeffosClient client1;
 
+    
+    public NSConnection GetNSConnection(string namespaceName)
+    {
+        return client1.Connection.GetNamespace(@namespace);
+    }
 
+    public Room GetRoom(string roomName)
+    {
+        var nsConn = client1.Connection.GetNamespace(@namespace);
+        return nsConn.GetJoinedRoom(roomName);
+    }
 
     async void DemoConnectionA()
     {
