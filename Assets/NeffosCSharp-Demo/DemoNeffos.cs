@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Text;
 using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks.Linq;
 using NeffosCSharp;
 using NeffosCSharp.ConnectionHandles;
 using UnityEngine;
@@ -31,7 +32,7 @@ public class DemoNeffos : MonoBehaviour
         var option = new Options(3, 10f);
         client1 = new NeffosClient(URL, option, chatServiceHandler);
         client1.Key = keyClient1;
-        client1.OutOfReconnectAttempts = () => { Debug.Log("OutOfReconnectAttempts"); };
+        client1.State.Subscribe(AwaitForReconnect);
 
         _client1Connection = await client1.DialAsync(Debug.LogError);
         
@@ -44,6 +45,31 @@ public class DemoNeffos : MonoBehaviour
             Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
             return message.Error;
         };
+        
+
+    }
+    
+    void AwaitForReconnect(NeffosClientState state)
+    {
+        switch (state)
+        {
+            case NeffosClientState.Offline:
+                Debug.Log("Offline");
+                break;
+            case NeffosClientState.Reconnecting:
+                Debug.Log("Reconnecting");
+                break;
+            case NeffosClientState.Connected:
+                Debug.Log("Connected");
+                break;
+            case NeffosClientState.Connecting:
+                Debug.Log("Connecting");
+                break;
+            default:
+                Debug.Log("Unknown");
+                break;
+        }
+        
     }
 
     private void Start()
