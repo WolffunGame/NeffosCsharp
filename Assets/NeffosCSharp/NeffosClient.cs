@@ -21,6 +21,8 @@ namespace NeffosCSharp
 
         private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
         private Connection _connection;
+        
+        private bool _isForceDisconnect;
 
 
         private readonly Options _options;
@@ -39,7 +41,9 @@ namespace NeffosCSharp
         public UniTask<Connection> DialAsync(Action<string> reject)
         {
             State.Value = NeffosClientState.Connecting;
+            _isForceDisconnect = false;
             ConnectionTcs = new UniTaskCompletionSource<Connection>();
+            
             var namespaces = NamespacesExtensions.ResolveNamespace(_connectionHandlers, reject);
 
             if (namespaces == null || namespaces.Count == 0)
@@ -103,6 +107,7 @@ namespace NeffosCSharp
             if (!string.IsNullOrEmpty(error))
             {
                 Debug.LogError(error);
+                return;
             }
 
             if (_connection.IsAcknowledged)
@@ -122,6 +127,7 @@ namespace NeffosCSharp
             if (!string.IsNullOrEmpty(error))
             {
                 Debug.LogError(error);
+                return;
             }
 
             if (_connection.IsAcknowledged)
@@ -210,7 +216,7 @@ namespace NeffosCSharp
         // We check those two ^ with conn.isClosed().
         public async UniTask Reconnect(WebSocket webSocket)
         {
-            if (State.Value == NeffosClientState.Reconnecting)
+            if (State.Value == NeffosClientState.Reconnecting || _isForceDisconnect)
             {
                 return;
             }
@@ -267,6 +273,12 @@ namespace NeffosCSharp
 
         public void Dispose()
         {
+        }
+        
+        public void ForceDisconnect()
+        {
+            _connection.Close();
+            _isForceDisconnect = true;
         }
     }
 }
