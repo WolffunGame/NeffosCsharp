@@ -102,7 +102,7 @@ namespace NeffosCSharp
             var error = _connection.Handle(message.ToByteArray());
             if (!string.IsNullOrEmpty(error))
             {
-                throw new Exception(error);
+                Debug.LogError(error);
             }
 
             if (_connection.IsAcknowledged)
@@ -121,7 +121,7 @@ namespace NeffosCSharp
             var error = _connection.Handle(data);
             if (!string.IsNullOrEmpty(error))
             {
-                throw new Exception(error);
+                Debug.LogError(error);
             }
 
             if (_connection.IsAcknowledged)
@@ -210,6 +210,10 @@ namespace NeffosCSharp
         // We check those two ^ with conn.isClosed().
         public async UniTask Reconnect(WebSocket webSocket)
         {
+            if (State.Value == NeffosClientState.Reconnecting)
+            {
+                return;
+            }
             if (!_connection.Closed)
             {
                 webSocket.OnMessage -= OnMessage;
