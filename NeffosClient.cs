@@ -142,6 +142,7 @@ namespace NeffosCSharp
 
         void OnError(WebSocket webSocket, string exception)
         {
+            Debug.LogError(exception);
             Reconnect(webSocket).Forget();
         }
 
