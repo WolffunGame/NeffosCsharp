@@ -12,13 +12,11 @@ namespace NeffosCSharp
         {
             if (ns.Events.ContainsKey(message.Event))
             {
-                Debug.Log("fired event: " + message.Event);
                 return ns.Events[message.Event].Invoke(ns, message);
             }
 
             if (ns.Events.ContainsKey(Configuration.OnAnyEvent))
             {
-                Debug.Log("fired event: " + Configuration.OnAnyEvent);
                 return ns.Events[Configuration.OnAnyEvent].Invoke(ns, message);
             }
 
