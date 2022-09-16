@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Linq;
 using NeffosCSharp;
 using NeffosCSharp.ConnectionHandles;
+using Scenes;
 using UnityEngine;
 
 public class DemoNeffos : MonoBehaviour
@@ -14,7 +15,7 @@ public class DemoNeffos : MonoBehaviour
     
     public string @namespace = "Test";
     
-    private NeffosClient client1;
+    public NeffosClient client1;
 
     
     public NSConnection GetNSConnection(string namespaceName)
@@ -30,7 +31,7 @@ public class DemoNeffos : MonoBehaviour
 
     async void DemoConnectionA()
     {
-        var chatServiceHandler = new MainNamespaceHandler();
+        var chatServiceHandler = new MyConnectionHandler();
         var option = new Options(3, 10f);
         client1 = new NeffosClient(URL, option, chatServiceHandler);
         client1.Key = keyClient1;
