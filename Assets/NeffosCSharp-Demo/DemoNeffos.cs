@@ -82,10 +82,10 @@ public class DemoNeffos : MonoBehaviour
         
     }
 
-    private void Start()
-    {
-        DemoConnectionA();
-    }
+    // private void Start()
+    // {
+    //     DemoConnectionA();
+    // }
 
     private void OnDestroy()
     {
@@ -94,50 +94,61 @@ public class DemoNeffos : MonoBehaviour
 
     private void OnGUI()
     {
-        if (GUILayout.Button("Client 1 Send Message"))
-        {
-            string seed = "qwertyuiop[]asdfghjklzxcvbnm";
-            var random = new System.Random();
-
-            //random a string 300 characters long
-            string message = new string(
-                Enumerable.Repeat(seed, 300)
-                    .Select(s => s[random.Next(s.Length)])
-                    .ToArray());
-
-
-            _client1Room.Emit("TestEvent", message);
-        }
+        // if (GUILayout.Button("Client 1 Send Message"))
+        // {
+        //     string seed = "qwertyuiop[]asdfghjklzxcvbnm";
+        //     var random = new System.Random();
+        //
+        //     //random a string 300 characters long
+        //     string message = new string(
+        //         Enumerable.Repeat(seed, 300)
+        //             .Select(s => s[random.Next(s.Length)])
+        //             .ToArray());
+        //
+        //
+        //     _client1Room.Emit("TestEvent", message);
+        // }
+        //
+        //
+        // if (GUILayout.Button("Login"))
+        // {
+        //     _nsClient1Connection.Ask("Login", string.Empty).Forget();
+        // }
+        //
+        // if (GUILayout.Button("Client 1 Join Room 01"))
+        // {
+        //     _nsClient1Connection.JoinRoom("Room-Vip-01").Forget();
+        // }
+        //
+        // if (GUILayout.Button("Client 1 Join Room 02"))
+        // {
+        //     _nsClient1Connection.JoinRoom("Room-Vip-02").Forget();
+        // }
+        //
+        // if (GUILayout.Button("Client 1 Leave All Room"))
+        // {
+        //     _nsClient1Connection.LeaveAll().Forget();
+        // }
+        //
+        // if(GUILayout.Button("Client 1 Leave Room Party-499"))
+        // {
+        //     _client1Room.Leave().Forget();
+        // }
+        //
+        // if (GUILayout.Button("Create Party Room"))
+        // {
+        //     _nsClient1Connection.Ask("CreatePartyRoom", string.Empty).Forget();
+        // }
         
+        if (GUILayout.Button("Dial"))
+        {
+            DemoConnectionA();
+        }
+
 
         if (GUILayout.Button("Login"))
         {
             _nsClient1Connection.Ask("Login", string.Empty).Forget();
-        }
-
-        if (GUILayout.Button("Client 1 Join Room 01"))
-        {
-            _nsClient1Connection.JoinRoom("Room-Vip-01").Forget();
-        }
-
-        if (GUILayout.Button("Client 1 Join Room 02"))
-        {
-            _nsClient1Connection.JoinRoom("Room-Vip-02").Forget();
-        }
-
-        if (GUILayout.Button("Client 1 Leave All Room"))
-        {
-            _nsClient1Connection.LeaveAll().Forget();
-        }
-        
-        if(GUILayout.Button("Client 1 Leave Room Party-499"))
-        {
-            _client1Room.Leave().Forget();
-        }
-        
-        if (GUILayout.Button("Create Party Room"))
-        {
-            _nsClient1Connection.Ask("CreatePartyRoom", string.Empty).Forget();
         }
     }
 }
