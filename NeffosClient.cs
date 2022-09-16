@@ -62,6 +62,7 @@ namespace NeffosCSharp
             }
 
             var webSocket = new WebSocket(new Uri(_endPoint));
+            webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5);
 #if !UNITY_WEBGL || UNITY_EDITOR
             webSocket.StartPingThread = true;
 
@@ -281,7 +282,6 @@ namespace NeffosCSharp
         public void Close()
         {
             _connection.Close();
-            _connection = null;
         }
     }
 }
