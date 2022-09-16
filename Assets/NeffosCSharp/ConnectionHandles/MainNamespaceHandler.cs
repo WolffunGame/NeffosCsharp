@@ -33,6 +33,8 @@ namespace NeffosCSharp.ConnectionHandles
 
         public string Handle(NSConnection nsConnection, Message message)
         {
+            //log received event
+            Debug.Log("Received event: " + message.Event + " from namespace: " + message.Namespace + " error: " + message.Error);
             if (message.IsError)
             {
                 var errorMsg = message.Body.ToUTF8String();

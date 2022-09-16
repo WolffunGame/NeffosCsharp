@@ -11,17 +11,9 @@ public class DemoNeffos : MonoBehaviour
     public string URL = "ws://localhost:8080/ws/chat";
 
     public string keyClient1 = "Bearer";
-
-    public string keyClient2 = "Bearer";
-
+    
     public string @namespace = "Test";
-
-    private Connection _client1Connection;
-
-    private NSConnection _nsClient1Connection;
-
-    private Room _client1Room;
-
+    
     private NeffosClient client1;
 
     
@@ -44,13 +36,13 @@ public class DemoNeffos : MonoBehaviour
         client1.Key = keyClient1;
         client1.State.Subscribe(AwaitForReconnect);
 
-        _client1Connection = await client1.DialAsync(Debug.LogError);
+        await client1.DialAsync(Debug.LogError);
         
-        _nsClient1Connection = await _client1Connection.Connect(@namespace);
+        var nsConn = await client1.Connection.Connect(@namespace);
 
-        _client1Room = await _nsClient1Connection.JoinRoom("Party-499");
+         await nsConn.JoinRoom("Party-499");
 
-        _nsClient1Connection.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
+        nsConn.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
             Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
             return message.Error;
@@ -89,7 +81,7 @@ public class DemoNeffos : MonoBehaviour
 
     private void OnDestroy()
     {
-        _client1Connection?.Close();
+        client1.Connection.Close();
     }
 
     private void OnGUI()
@@ -148,7 +140,7 @@ public class DemoNeffos : MonoBehaviour
 
         if (GUILayout.Button("Login"))
         {
-            _nsClient1Connection.Ask("Login", string.Empty).Forget();
+            client1.Connection.GetNamespace(@namespace).Ask("Login", string.Empty).Forget();
         }
     }
 }
