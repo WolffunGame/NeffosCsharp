@@ -277,5 +277,11 @@ namespace NeffosCSharp
         public void Dispose()
         {
         }
+
+        public void Close()
+        {
+            _connection.Close();
+            _connection = null;
+        }
     }
 }
