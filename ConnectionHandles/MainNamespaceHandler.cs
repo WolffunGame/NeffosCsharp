@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace NeffosCSharp.ConnectionHandles
@@ -32,7 +33,21 @@ namespace NeffosCSharp.ConnectionHandles
 
         public string Handle(NSConnection nsConnection, Message message)
         {
-            //Debug.Log($"Server says: {message.Body} <color=red>event</color> {message.Event}");
+            if (message.IsError)
+            {
+                var errorMsg = message.Body.ToUTF8String();
+                Debug.LogError($"[Event {message.Event}]HandleDisconnect error: " + errorMsg);
+                return errorMsg;
+            }
+
+            try
+            {
+                Debug.Log($"[Event {message.Event}]HandleDisconnect: " + message.Body.ToUTF8String());
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
             return message.Error;
         }
     }

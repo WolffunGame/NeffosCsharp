@@ -14,9 +14,10 @@ namespace NeffosCSharp
         const string WebsocketReconnectHeaderKey = "X-Websocket-Reconnect";
 
         public string Key { get; set; }
-        
+
         public AsyncReactiveProperty<NeffosClientState> State { get; } =
             new AsyncReactiveProperty<NeffosClientState>(NeffosClientState.UnKnown);
+
         public Connection Connection => _connection;
 
         private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
@@ -39,7 +40,7 @@ namespace NeffosCSharp
         {
             State.Value = NeffosClientState.Connecting;
             ConnectionTcs = new UniTaskCompletionSource<Connection>();
-            
+
             var namespaces = NamespacesExtensions.ResolveNamespace(_connectionHandlers, reject);
 
             if (namespaces == null || namespaces.Count == 0)
@@ -78,7 +79,7 @@ namespace NeffosCSharp
                     e.AddHeader(header.Key, header.Value);
                 }
             };
-            
+
             _connection = new Connection(webSocket, namespaces);
             _connection.ReconnectTries = _options.ReconnectionAttempts;
 
@@ -140,11 +141,13 @@ namespace NeffosCSharp
         void OnError(WebSocket webSocket, string exception)
         {
             Debug.LogError(exception);
+            _connection?.Close();
             Reconnect(webSocket).Forget();
         }
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
+            Debug.Log($"WebSocket closed with code: {code} and reason: {reason}");
             Reconnect(webSocket).Forget();
         }
 
@@ -164,7 +167,6 @@ namespace NeffosCSharp
             // there is no way to block them programmatically, we could do a console.clear but this will clear any custom logging the end-dev may has too.
             int tries = 1;
             State.Value = NeffosClientState.Reconnecting;
-            
             var endpoint = endPoint.Replace("ws://", "http://").Replace("wss://", "https://");
             Retry:
 
@@ -177,6 +179,15 @@ namespace NeffosCSharp
                 if (request.Response != null)
                 {
                     return true;
+                }
+
+                if (request.Exception != null)
+                {
+                    Debug.LogError($"[{nameof(NeffosClient)}]: {request.Exception}");
+                }
+                else if (tries >= _options.ReconnectionAttempts)
+                {
+                    return false;
                 }
             }
             else
@@ -218,6 +229,7 @@ namespace NeffosCSharp
             {
                 return;
             }
+
             if (!_connection.Closed)
             {
                 webSocket.OnMessage -= OnMessage;
@@ -227,10 +239,8 @@ namespace NeffosCSharp
                 webSocket.OnOpen -= OnOpen;
                 webSocket.OnInternalRequestCreated = null;
             }
-            
-            //log
-            Debug.Log("reconnecting...");
 
+            //log
             if (_options.ReconnectionAttempts <= 0)
             {
                 _connection.Close();
