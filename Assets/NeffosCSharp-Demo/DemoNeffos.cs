@@ -143,5 +143,13 @@ public class DemoNeffos : MonoBehaviour
         {
             client1.Connection.GetNamespace(@namespace).Ask("Login", string.Empty).Forget();
         }
+        
+        if (GUILayout.Button("Log connected namespaces"))
+        {
+            foreach (var (key, value) in client1.Connection.ConnectedNamespaces)
+            {
+                Debug.Log($"namespace: {key}");
+            }
+        }
     }
 }
