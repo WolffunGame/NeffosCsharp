@@ -42,12 +42,17 @@ namespace NeffosCSharp.ConnectionHandles
 
             try
             {
-                Debug.Log($"[Event {message.Event}]HandleDisconnect: " + message.Body.ToUTF8String());
+                if (message.Event.Equals("OnDisconnect"))
+                {
+                    nsConnection.Connection.Close();
+                    Debug.Log($"[Event {message.Event}]HandleDisconnect: " + message.Body.ToUTF8String());
+                }
             }
             catch (Exception e)
             {
                 Debug.LogError(e);
             }
+
             return message.Error;
         }
     }
