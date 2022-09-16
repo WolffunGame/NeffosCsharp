@@ -62,7 +62,7 @@ namespace NeffosCSharp
             }
 
             var webSocket = new WebSocket(new Uri(_endPoint));
-            webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5);
+            webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(4f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             webSocket.StartPingThread = true;
 
@@ -147,7 +147,6 @@ namespace NeffosCSharp
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
-            Debug.Log($"WebSocket closed with code: {code} and reason: {reason}");
             Reconnect(webSocket).Forget();
         }
 
