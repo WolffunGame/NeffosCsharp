@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace NeffosCSharp
 {
-    public class Connection
+    public class Connection : IDisposable
     {
         private readonly WebSocket _webSocket;
         public int ReconnectTries { get; set; }
@@ -439,6 +439,11 @@ namespace NeffosCSharp
             {
                 _webSocket.Close();
             }
+        }
+        
+        public void Dispose()
+        {
+            Close();
         }
     }
 }
