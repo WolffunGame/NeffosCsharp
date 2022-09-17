@@ -12,12 +12,12 @@ public class DemoNeffos : MonoBehaviour
     public string URL = "ws://localhost:8080/ws/chat";
 
     public string keyClient1 = "Bearer";
-    
+
     public string @namespace = "Test";
-    
+
     public NeffosClient client1;
 
-    
+
     public NSConnection GetNSConnection(string namespaceName)
     {
         return client1.Connection.GetNamespace(@namespace);
@@ -32,26 +32,24 @@ public class DemoNeffos : MonoBehaviour
     async void DemoConnectionA()
     {
         var chatServiceHandler = new MyConnectionHandler();
-        var option = new Options(3, 10f);
+        var option = new Options(3, 5f);
         client1 = new NeffosClient(URL, option, chatServiceHandler);
         client1.Key = keyClient1;
         client1.State.Subscribe(AwaitForReconnect);
 
         await client1.DialAsync(Debug.LogError);
-        
+
         var nsConn = await client1.Connection.Connect(@namespace);
 
-         await nsConn.JoinRoom("Party-499");
+        await nsConn.JoinRoom("Party-499");
 
         nsConn.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
             Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
             return message.Error;
         };
-        
-
     }
-    
+
     void AwaitForReconnect(NeffosClientState state)
     {
         switch (state)
@@ -72,7 +70,6 @@ public class DemoNeffos : MonoBehaviour
                 Debug.Log("Unknown");
                 break;
         }
-        
     }
 
     // private void Start()
@@ -132,7 +129,7 @@ public class DemoNeffos : MonoBehaviour
         // {
         //     _nsClient1Connection.Ask("CreatePartyRoom", string.Empty).Forget();
         // }
-        
+
         if (GUILayout.Button("Dial"))
         {
             DemoConnectionA();
@@ -143,13 +140,23 @@ public class DemoNeffos : MonoBehaviour
         {
             client1.Connection.GetNamespace(@namespace).Ask("Login", string.Empty).Forget();
         }
-        
+
         if (GUILayout.Button("Log connected namespaces"))
         {
             foreach (var (key, value) in client1.Connection.ConnectedNamespaces)
             {
+                foreach (var keyValuePair in value.Rooms)
+                {
+                    Debug.Log("Room: "+keyValuePair.Key);
+                }
+
                 Debug.Log($"namespace: {key}");
             }
+        }
+
+        if (GUILayout.Button("Reconnect"))
+        {
+            client1.Reconnect();
         }
     }
 }

@@ -26,7 +26,7 @@ namespace NeffosCSharp
         private readonly Options _options;
         private readonly string _endPoint;
         private readonly IConnectionHandler[] _connectionHandlers;
-
+        private WebSocket _webSocket;
 
         public NeffosClient(string endPoint, Options options, params IConnectionHandler[] connectionHandlers)
         {
@@ -61,36 +61,37 @@ namespace NeffosCSharp
                 _options.Headers.Remove(WebsocketReconnectHeaderKey);
             }
 
-            var webSocket = new WebSocket(new Uri(_endPoint));
-            webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
+            _webSocket = new WebSocket(new Uri(_endPoint));
+            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(4f);
 #if !UNITY_WEBGL || UNITY_EDITOR
-            webSocket.StartPingThread = true;
+            _webSocket.StartPingThread = true;
 
 #if !BESTHTTP_DISABLE_PROXY
             if (HTTPManager.Proxy != null)
-                webSocket.OnInternalRequestCreated = (ws, internalRequest) =>
+                _webSocket.OnInternalRequestCreated = (ws, internalRequest) =>
                     internalRequest.Proxy =
                         new HTTPProxy(HTTPManager.Proxy.Address, HTTPManager.Proxy.Credentials, false);
 #endif
 #endif
-            webSocket.OnInternalRequestCreated += (sender, e) =>
+            _webSocket.OnInternalRequestCreated += (sender, e) =>
             {
                 foreach (var header in _options.Headers)
                 {
                     e.AddHeader(header.Key, header.Value);
                 }
             };
-
-            _connection = new Connection(webSocket, namespaces);
+            if(_connection != null)
+                _connection.Dispose();
+            _connection = new Connection(_webSocket, namespaces);
             _connection.ReconnectTries = _options.ReconnectionAttempts;
 
-            webSocket.OnMessage += OnMessage;
-            webSocket.OnBinary += OnBinary;
-            webSocket.OnError += OnError;
-            webSocket.OnClosed += OnClosed;
-            webSocket.OnOpen += OnOpen;
-
-            webSocket.Open();
+            _webSocket.OnMessage += OnMessage;
+            _webSocket.OnBinary += OnBinary;
+            _webSocket.OnError += OnError;
+            _webSocket.OnClosed += OnClosed;
+            _webSocket.OnOpen += OnOpen;
+            if(_webSocket.IsOpen == false)
+                _webSocket.Open();
             //wait for acknowledged
             return ConnectionTcs.Task;
         }
@@ -142,11 +143,13 @@ namespace NeffosCSharp
         void OnError(WebSocket webSocket, string exception)
         {
             Debug.LogError(exception);
+            ConnectionTcs.TrySetException(new Exception(exception));
             Reconnect(webSocket).Forget();
         }
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
+            Debug.Log("Reconnecting on close " + code + " " + reason);
             Reconnect(webSocket).Forget();
         }
 
@@ -222,9 +225,10 @@ namespace NeffosCSharp
         // 1. server force-disconnect this client.
         // 2. client disconnects itself manually.
         // We check those two ^ with conn.isClosed().
-        public async UniTask Reconnect(WebSocket webSocket)
+        private async UniTask Reconnect(WebSocket webSocket)
         {
-            if (State.Value == NeffosClientState.Reconnecting || _connection.Closed)
+            if(_connection == null) return;
+            if (State.Value == NeffosClientState.Reconnecting ||State.Value == NeffosClientState.Connecting || _connection.Closed)
             {
                 return;
             }
@@ -276,11 +280,19 @@ namespace NeffosCSharp
 
         public void Dispose()
         {
+            _connection.Close();
+            _connection = null;
         }
 
         public void Close()
         {
             _connection.Close();
         }
+
+        public UniTask Reconnect()
+        {
+            return Reconnect(_webSocket);
+        }
+        
     }
 }
