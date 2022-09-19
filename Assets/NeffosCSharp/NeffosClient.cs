@@ -27,6 +27,8 @@ namespace NeffosCSharp
         private readonly string _endPoint;
         private readonly IConnectionHandler[] _connectionHandlers;
         private WebSocket _webSocket;
+        
+        private Dictionary<string, List<string>> _previousConnectedNamespaces = new Dictionary<string, List<string>>();
 
         public NeffosClient(string endPoint, Options options, params IConnectionHandler[] connectionHandlers)
         {
@@ -80,8 +82,12 @@ namespace NeffosCSharp
                     e.AddHeader(header.Key, header.Value);
                 }
             };
-            if(_connection != null)
+            if (_connection != null)
+            {
+                
                 _connection.Dispose();
+            }
+                
             _connection = new Connection(_webSocket, namespaces);
             _connection.ReconnectTries = _options.ReconnectionAttempts;
 
@@ -207,16 +213,22 @@ namespace NeffosCSharp
             tries++;
             goto Retry;
         }
-
+        
         private async UniTask ConnectToNamespace(
             Dictionary<string, List<string>> previouslyConnectedNamespacesNamesOnly, Connection connection)
         {
+            //log
+            Debug.LogWarning($"[{nameof(NeffosClient)}] Reconnecting to namespaces");
             foreach (var (key, value) in previouslyConnectedNamespacesNamesOnly)
             {
-                var newNsConn = await connection.Connect(key);
+                //log
+                Debug.LogWarning($"[{nameof(NeffosClient)}] Reconnecting to namespace {key}");
+                var newNsConn = await connection.AskConnect(key);
                 foreach (var room in value)
                 {
-                    await newNsConn.JoinRoom(room);
+                    //log
+                    Debug.LogWarning($"[{nameof(NeffosClient)}] Reconnecting to room {room}");
+                    await newNsConn.AskRoomJoin(room);
                 }
             }
         }
