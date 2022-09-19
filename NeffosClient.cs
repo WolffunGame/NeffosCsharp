@@ -228,7 +228,7 @@ namespace NeffosCSharp
         private async UniTask Reconnect(WebSocket webSocket)
         {
             if(_connection == null) return;
-
+            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting || _connection.Closed) return;
             if (!_connection.Closed)
             {
                 webSocket.OnMessage -= OnMessage;
@@ -260,7 +260,7 @@ namespace NeffosCSharp
                 previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
             }
             
-            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting || _connection.Closed) return;
+            
             _connection.Dispose();
             var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
             if (isOnline)
