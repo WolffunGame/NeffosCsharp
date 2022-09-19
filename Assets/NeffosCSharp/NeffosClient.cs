@@ -62,7 +62,7 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
-            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(4f);
+            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
 
@@ -246,7 +246,7 @@ namespace NeffosCSharp
             //log
             if (_options.ReconnectionAttempts <= 0)
             {
-                _connection.Close();
+                _connection.Dispose();
             }
 
             var previouslyConnectedNamespacesNamesOnly = new Dictionary<string, List<string>>();
@@ -264,7 +264,7 @@ namespace NeffosCSharp
                 previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
             }
 
-            _connection.Close();
+            _connection.Dispose();
 
             var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
             if (isOnline)
