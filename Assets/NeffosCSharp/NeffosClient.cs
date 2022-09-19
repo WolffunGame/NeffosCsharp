@@ -189,7 +189,6 @@ namespace NeffosCSharp
                 }
                 else if (tries >= _options.ReconnectionAttempts)
                 {
-                    _connection?.Dispose();
                     return false;
                 }
             }
@@ -202,7 +201,6 @@ namespace NeffosCSharp
             await UniTask.Delay(TimeSpan.FromSeconds(checkEvery));
             if (tries >= _options.ReconnectionAttempts)
             {
-                _connection?.Dispose();
                 return false;
             }
 
@@ -261,10 +259,9 @@ namespace NeffosCSharp
 
                 previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
             }
-
-            _connection.Dispose();
-            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting || _connection.Closed) return;
             
+            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting || _connection.Closed) return;
+            _connection.Dispose();
             var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
             if (isOnline)
             {
@@ -273,6 +270,7 @@ namespace NeffosCSharp
             }
             else
             {
+                _connection.Dispose();
                 State.Value = NeffosClientState.Offline;
             }
         }
