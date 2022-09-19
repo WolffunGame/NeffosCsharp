@@ -189,6 +189,7 @@ namespace NeffosCSharp
                 }
                 else if (tries >= _options.ReconnectionAttempts)
                 {
+                    _connection?.Dispose();
                     return false;
                 }
             }
@@ -201,6 +202,7 @@ namespace NeffosCSharp
             await UniTask.Delay(TimeSpan.FromSeconds(checkEvery));
             if (tries >= _options.ReconnectionAttempts)
             {
+                _connection?.Dispose();
                 return false;
             }
 
@@ -228,10 +230,6 @@ namespace NeffosCSharp
         private async UniTask Reconnect(WebSocket webSocket)
         {
             if(_connection == null) return;
-            if (State.Value == NeffosClientState.Reconnecting ||State.Value == NeffosClientState.Connecting || _connection.Closed)
-            {
-                return;
-            }
 
             if (!_connection.Closed)
             {
@@ -265,7 +263,8 @@ namespace NeffosCSharp
             }
 
             _connection.Dispose();
-
+            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting || _connection.Closed) return;
+            
             var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
             if (isOnline)
             {
@@ -281,7 +280,6 @@ namespace NeffosCSharp
         public void Dispose()
         {
             _connection.Close();
-            _connection = null;
         }
 
         public void Close()
