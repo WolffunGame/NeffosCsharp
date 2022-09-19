@@ -260,22 +260,25 @@ namespace NeffosCSharp
                 return UniTask.FromException<Message>(new Exception(Exceptions.ErrorClosed));
 
             //id = current time in tick
-            var id = $"{Configuration.waitComesFromClientPrefix}{DateTime.Now.Ticks}";
+            var id = $"{Configuration.waitComesFromClientPrefix.ToString()}{DateTime.Now.Ticks.ToString()}";
             message.Wait = id;
 
             var tcs = new UniTaskCompletionSource<Message>();
             //wait for response or error from server
-            _waitingMessages.Add(id, (m) =>
+            if (!_waitingMessages.ContainsKey(id))
             {
-                if (!string.IsNullOrEmpty(m.Error))
+                _waitingMessages.Add(id, (m) =>
                 {
-                    tcs.TrySetException(new Exception(m.Error));
-                }
-                else
-                {
-                    tcs.TrySetResult(m);
-                }
-            });
+                    if (!string.IsNullOrEmpty(m.Error))
+                    {
+                        tcs.TrySetException(new Exception(m.Error));
+                    }
+                    else
+                    {
+                        tcs.TrySetResult(m);
+                    }
+                });
+            }
             
             var wrote = WriteBinary(message);
             if (!wrote)
