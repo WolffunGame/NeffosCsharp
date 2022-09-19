@@ -28,8 +28,6 @@ namespace NeffosCSharp
         private readonly IConnectionHandler[] _connectionHandlers;
         private WebSocket _webSocket;
         
-        private Dictionary<string, List<string>> _previousConnectedNamespaces = new Dictionary<string, List<string>>();
-
         public NeffosClient(string endPoint, Options options, params IConnectionHandler[] connectionHandlers)
         {
             _endPoint = endPoint;
@@ -122,6 +120,15 @@ namespace NeffosCSharp
                 if (s)
                 {
                     State.Value = NeffosClientState.Connected;
+                    //log namespace
+                    foreach (var (key, value) in _connection.ConnectedNamespaces)
+                    {
+                        Debug.Log($"[OnMessage]-Connected to namespace: {key}");
+                        foreach (var (key1, room) in value.Rooms)
+                        {
+                            Debug.Log($"[OnMessage]-Connected to room: {key1}");
+                        }
+                    }
                 }
             }
         }
@@ -142,6 +149,15 @@ namespace NeffosCSharp
                 if (s)
                 {
                     State.Value = NeffosClientState.Connected;
+                    //log namespace
+                    foreach (var (key, value) in _connection.ConnectedNamespaces)
+                    {
+                        Debug.Log($"[OnBinary]-Connected to namespace: {key}");
+                        foreach (var (key1, room) in value.Rooms)
+                        {
+                            Debug.Log($"[OnBinary]-Connected to room: {key1}");
+                        }
+                    }
                 }
             }
         }
@@ -149,13 +165,15 @@ namespace NeffosCSharp
         void OnError(WebSocket webSocket, string exception)
         {
             Debug.LogError(exception);
-            ConnectionTcs.TrySetException(new Exception(exception));
+            //ConnectionTcs.TrySetException(new Exception(exception));
+            ConnectionTcs.TrySetCanceled();
             Reconnect(webSocket).Forget();
         }
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
             Debug.Log("Reconnecting on close " + code + " " + reason);
+            ConnectionTcs.TrySetCanceled();
             Reconnect(webSocket).Forget();
         }
 
@@ -217,17 +235,15 @@ namespace NeffosCSharp
         private async UniTask ConnectToNamespace(
             Dictionary<string, List<string>> previouslyConnectedNamespacesNamesOnly, Connection connection)
         {
-            //log
-            Debug.LogWarning($"[{nameof(NeffosClient)}] Reconnecting to namespaces");
+            if (previouslyConnectedNamespacesNamesOnly.Count == 0)
+            {
+                connection.Close();
+            }
             foreach (var (key, value) in previouslyConnectedNamespacesNamesOnly)
             {
-                //log
-                Debug.LogWarning($"[{nameof(NeffosClient)}] Reconnecting to namespace {key}");
                 var newNsConn = await connection.AskConnect(key);
                 foreach (var room in value)
                 {
-                    //log
-                    Debug.LogWarning($"[{nameof(NeffosClient)}] Reconnecting to room {room}");
                     await newNsConn.AskRoomJoin(room);
                 }
             }
@@ -272,8 +288,14 @@ namespace NeffosCSharp
                 previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
             }
             
-            
             _connection.Dispose();
+
+            if (previouslyConnectedNamespacesNamesOnly.Count <= 0)
+            {
+                State.Value = NeffosClientState.Offline;
+                return;
+            }
+            
             var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
             if (isOnline)
             {

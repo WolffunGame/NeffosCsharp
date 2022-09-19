@@ -55,19 +55,19 @@ public class DemoNeffos : MonoBehaviour
         switch (state)
         {
             case NeffosClientState.Offline:
-                Debug.Log("Offline");
+                Debug.LogWarning("Offline");
                 break;
             case NeffosClientState.Reconnecting:
-                Debug.Log("Reconnecting");
+                Debug.LogWarning("Reconnecting");
                 break;
             case NeffosClientState.Connected:
-                Debug.Log("Connected");
+                Debug.LogWarning("Connected");
                 break;
             case NeffosClientState.Connecting:
-                Debug.Log("Connecting");
+                Debug.LogWarning("Connecting");
                 break;
             default:
-                Debug.Log("Unknown");
+                Debug.LogWarning("Unknown");
                 break;
         }
     }
