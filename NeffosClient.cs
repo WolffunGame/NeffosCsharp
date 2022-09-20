@@ -81,7 +81,6 @@ namespace NeffosCSharp
             };
             if (_connection != null)
             {
-                
                 _connection.Dispose();
             }
                 
@@ -221,12 +220,13 @@ namespace NeffosCSharp
             goto Retry;
         }
         
-        private async UniTask ConnectToNamespace(
-            Dictionary<string, List<string>> previouslyConnectedNamespacesNamesOnly, Connection connection)
+        private async UniTask ConnectToNamespace(Dictionary<string, List<string>> previouslyConnectedNamespacesNamesOnly, Connection connection)
         {
             if (previouslyConnectedNamespacesNamesOnly.Count == 0)
             {
-                connection.Close();
+                connection.Dispose();
+                State.Value = NeffosClientState.Offline;
+                ConnectionTcs.TrySetCanceled();
             }
             foreach (var (key, value) in previouslyConnectedNamespacesNamesOnly)
             {
@@ -282,6 +282,7 @@ namespace NeffosCSharp
             if (previouslyConnectedNamespacesNamesOnly.Count <= 0)
             {
                 State.Value = NeffosClientState.Offline;
+                ConnectionTcs.TrySetCanceled();
                 return;
             }
             
@@ -293,6 +294,7 @@ namespace NeffosCSharp
             }
             else
             {
+                ConnectionTcs.TrySetCanceled();
                 _connection.Dispose();
                 State.Value = NeffosClientState.Offline;
             }
@@ -300,12 +302,15 @@ namespace NeffosCSharp
 
         public void Dispose()
         {
-            _connection.Close();
+            _connection.Dispose();
+            ConnectionTcs.TrySetCanceled();
         }
 
         public void Close()
         {
-            _connection.Close();
+            _connection.Dispose();
+            ConnectionTcs.TrySetCanceled();
+            State.Value = NeffosClientState.Offline;
         }
 
         public UniTask Reconnect()
