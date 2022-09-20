@@ -6,7 +6,6 @@ using Cysharp.Threading.Tasks;
 using NeffosCSharp.ConnectionHandles;
 using UnityEngine;
 
-
 namespace NeffosCSharp
 {
     public class NeffosClient : IDisposable
@@ -111,6 +110,10 @@ namespace NeffosCSharp
             if (!string.IsNullOrEmpty(error))
             {
                 Debug.LogError(error);
+                if (error.Equals(Configuration.badNamespaceError))
+                {
+                    Reconnect();
+                }
                 return;
             }
 
@@ -120,15 +123,6 @@ namespace NeffosCSharp
                 if (s)
                 {
                     State.Value = NeffosClientState.Connected;
-                    //log namespace
-                    foreach (var (key, value) in _connection.ConnectedNamespaces)
-                    {
-                        Debug.Log($"[OnMessage]-Connected to namespace: {key}");
-                        foreach (var (key1, room) in value.Rooms)
-                        {
-                            Debug.Log($"[OnMessage]-Connected to room: {key1}");
-                        }
-                    }
                 }
             }
         }
@@ -140,6 +134,10 @@ namespace NeffosCSharp
             if (!string.IsNullOrEmpty(error))
             {
                 Debug.LogError(error);
+                if (error.Equals(Configuration.badNamespaceError))
+                {
+                    Reconnect();
+                }
                 return;
             }
 
@@ -149,15 +147,6 @@ namespace NeffosCSharp
                 if (s)
                 {
                     State.Value = NeffosClientState.Connected;
-                    //log namespace
-                    foreach (var (key, value) in _connection.ConnectedNamespaces)
-                    {
-                        Debug.Log($"[OnBinary]-Connected to namespace: {key}");
-                        foreach (var (key1, room) in value.Rooms)
-                        {
-                            Debug.Log($"[OnBinary]-Connected to room: {key1}");
-                        }
-                    }
                 }
             }
         }

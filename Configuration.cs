@@ -48,5 +48,7 @@ namespace NeffosCSharp
         public const int validMessageSepCount = 7;
         public const string trueString = "1";
         public const string falseString = "0";
+        
+        public const string badNamespaceError = "Bad Namespace";
     }
 }
