@@ -310,7 +310,7 @@ namespace NeffosCSharp
         {
             _connection.Dispose();
             ConnectionTcs.TrySetCanceled();
-            State.Value = NeffosClientState.Offline;
+            State.Value = NeffosClientState.UnKnown;
         }
 
         public UniTask Reconnect()
