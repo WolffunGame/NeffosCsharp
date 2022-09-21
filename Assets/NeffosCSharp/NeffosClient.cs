@@ -243,7 +243,7 @@ namespace NeffosCSharp
         {
             if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting) return;
             
-            if (_connection.Closed || _connection == null)
+            if (_connection.Closed)
             {
                 State.Value = NeffosClientState.Offline;
                 ConnectionTcs.TrySetCanceled();
