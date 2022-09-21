@@ -61,7 +61,7 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
-            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
+            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(3f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
 
@@ -153,15 +153,12 @@ namespace NeffosCSharp
         void OnError(WebSocket webSocket, string exception)
         {
             Debug.LogError(exception);
-            //ConnectionTcs.TrySetException(new Exception(exception));
-            ConnectionTcs.TrySetCanceled();
             Reconnect(webSocket).Forget();
         }
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
             Debug.Log("Reconnecting on close " + code + " " + reason);
-            ConnectionTcs.TrySetCanceled();
             Reconnect(webSocket).Forget();
         }
 
@@ -244,8 +241,15 @@ namespace NeffosCSharp
         // We check those two ^ with conn.isClosed().
         private async UniTask Reconnect(WebSocket webSocket)
         {
-            if(_connection == null) return;
-            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting || _connection.Closed) return;
+            if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting) return;
+            
+            if (_connection.Closed || _connection == null)
+            {
+                State.Value = NeffosClientState.Offline;
+                ConnectionTcs.TrySetCanceled();
+                return;
+            }
+            
             if (!_connection.Closed)
             {
                 webSocket.OnMessage -= OnMessage;
