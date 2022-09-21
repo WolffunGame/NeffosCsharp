@@ -33,30 +33,15 @@ namespace Scenes
             return message.Error;
         }
 
+        private const string MultipleAccountEvent = "DisconnectPrevDevice";
+
         public string Handle(NSConnection nsConnection, Message message)
         {
-            //log received event
-            Debug.Log("Received event: " + message.Event + " from namespace: " + message.Namespace + " error: " + message.Error);
-            if (message.IsError)
+            if (message.Event.Equals(MultipleAccountEvent))
             {
-                var errorMsg = message.Body.ToUTF8String();
-                Debug.LogError($"[Event {message.Event}]HandleDisconnect error: " + errorMsg);
-                return errorMsg;
-            }
-
-            try
-            {
-                if (message.Event.Equals("OnDisconnect"))
-                {
-                    var client = GameObject.FindObjectOfType<DemoNeffos>();
-                    client.client1.Close();
-                    //nsConnection.Connection.Close();
-                    Debug.Log($"[Event {message.Event}]HandleDisconnect: " + message.Body.ToUTF8String());
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
+                var client = GameObject.FindObjectOfType<DemoNeffos>();
+                client.client1.Close();
+                Debug.Log($"[Event {message.Event}] Multiple device login detected: ");
             }
 
             return message.Error;

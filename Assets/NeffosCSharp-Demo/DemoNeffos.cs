@@ -17,7 +17,6 @@ public class DemoNeffos : MonoBehaviour
 
     public NeffosClient client1;
 
-
     public NSConnection GetNSConnection(string namespaceName)
     {
         return client1.Connection.GetNamespace(@namespace);
