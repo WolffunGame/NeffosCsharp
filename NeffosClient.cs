@@ -61,7 +61,7 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
-            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(3f);
+            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(8f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
 
@@ -245,7 +245,7 @@ namespace NeffosCSharp
             
             if (_connection.Closed)
             {
-                State.Value = NeffosClientState.Offline;
+                //State.Value = NeffosClientState.Offline;
                 ConnectionTcs.TrySetCanceled();
                 return;
             }
