@@ -44,7 +44,7 @@ public class DemoNeffos : MonoBehaviour
 
         nsConn.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
-            Debug.Log("Player 1 Receive: " + message.Body.ToUTF8String());
+            Debug.Log("Player 1 Receive Event: "+ $"{message.Event}" + message.Body.ToUTF8String());
             return message.Error;
         };
     }
@@ -64,6 +64,12 @@ public class DemoNeffos : MonoBehaviour
                 break;
             case NeffosClientState.Connecting:
                 Debug.LogWarning("Connecting");
+                break;
+            case NeffosClientState.FailedToReconnectPreviously:
+                Debug.LogWarning("FailedToReconnectPreviously");
+                break;
+            case NeffosClientState.ReconnectButWasClosed:
+                Debug.LogWarning("ReconnectButWasClosed");
                 break;
             default:
                 Debug.LogWarning("Unknown");

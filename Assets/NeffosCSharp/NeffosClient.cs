@@ -222,7 +222,7 @@ namespace NeffosCSharp
             if (previouslyConnectedNamespacesNamesOnly.Count == 0)
             {
                 connection.Dispose();
-                State.Value = NeffosClientState.Offline;
+                State.Value = NeffosClientState.FailedToReconnectPreviously;
                 ConnectionTcs.TrySetCanceled();
             }
             foreach (var (key, value) in previouslyConnectedNamespacesNamesOnly)
@@ -245,7 +245,7 @@ namespace NeffosCSharp
             
             if (_connection.Closed)
             {
-                //State.Value = NeffosClientState.Offline;
+                State.Value = NeffosClientState.ReconnectButWasClosed;
                 ConnectionTcs.TrySetCanceled();
                 return;
             }
@@ -285,7 +285,7 @@ namespace NeffosCSharp
 
             if (previouslyConnectedNamespacesNamesOnly.Count <= 0)
             {
-                State.Value = NeffosClientState.Offline;
+                State.Value = NeffosClientState.FailedToReconnectPreviously;
                 ConnectionTcs.TrySetCanceled();
                 return;
             }
@@ -298,9 +298,9 @@ namespace NeffosCSharp
             }
             else
             {
+                State.Value = NeffosClientState.Offline;
                 ConnectionTcs.TrySetCanceled();
                 _connection.Dispose();
-                State.Value = NeffosClientState.Offline;
             }
         }
 
