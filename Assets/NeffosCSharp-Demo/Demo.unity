@@ -611,8 +611,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c2ba1154f67249d7b713837d690e8c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  URL: wss://gameserver.uat.thetanarena.com/ws/chat
-  keyClient1: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJKV1RfQVBJUyIsImNhbl9taW50IjpmYWxzZSwiZXhwIjoxNjY0MTgwOTE5LCJpc3MiOiJodHRwczovL2FwaS5tYXJrZXRwbGFjZS5hcHAiLCJuYmYiOjE2NjM1NzYxMTksInJvbGUiOjAsInNpZCI6IiIsInN1YiI6IkhlbGxvZCIsInVzZXJfaWQiOiI2MjhlZjFhMmE1YWI1MjE5NjA4ZTdlOWUifQ.Hk-hRfpbx-AdXkakYHdt5R0TK8MdmQSIntbJVQTgUnI
+  URL: wss://thetan-websocket-preview-pr-81.staging.thetanarena.com/ws/chat
+  keyClient1: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJKV1RfQVBJUyIsImNhbl9taW50IjpmYWxzZSwiZXhwIjoxNjY0MjAxMDI3LCJpc3MiOiJodHRwczovL2FwaS5tYXJrZXRwbGFjZS5hcHAiLCJuYmYiOjE2NjM1OTYyMjcsInJvbGUiOjAsInNpZCI6IiIsInN1YiI6IkhlbGxvZCIsInVzZXJfaWQiOiI2MjhlZjFhMmE1YWI1MjE5NjA4ZTdlOWUifQ.8ol0fB_jFDq51Do6xN8jtxsLrkEUfm7G8ASmbe6kICc
   namespace: Game
 --- !u!4 &1889923686
 Transform:

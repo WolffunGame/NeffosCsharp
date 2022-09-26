@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text;
 using Cysharp.Threading.Tasks;
@@ -5,6 +6,7 @@ using Cysharp.Threading.Tasks.Linq;
 using NeffosCSharp;
 using NeffosCSharp.ConnectionHandles;
 using Scenes;
+using UnityEditor;
 using UnityEngine;
 
 public class DemoNeffos : MonoBehaviour
@@ -15,30 +17,30 @@ public class DemoNeffos : MonoBehaviour
 
     public string @namespace = "Test";
 
-    public NeffosClient client1;
-
+    public NeffosClient Client;
+    const string MultipleAccountEvent = "DisconnectPrevDevice";
     public NSConnection GetNSConnection(string namespaceName)
     {
-        return client1.Connection.GetNamespace(@namespace);
+        return Client.Connection.GetNamespace(@namespace);
     }
 
     public Room GetRoom(string roomName)
     {
-        var nsConn = client1.Connection.GetNamespace(@namespace);
+        var nsConn = Client.Connection.GetNamespace(@namespace);
         return nsConn.GetJoinedRoom(roomName);
     }
 
     async void DemoConnectionA()
     {
         var chatServiceHandler = new MyConnectionHandler();
-        var option = new Options(3, 5f);
-        client1 = new NeffosClient(URL, option, chatServiceHandler);
-        client1.Key = keyClient1;
-        client1.State.Subscribe(AwaitForReconnect);
+        var option = new Options(3, 5f, false);
+        Client = new NeffosClient(URL, option, chatServiceHandler);
+        Client.Key = keyClient1;
+        Client.State.Subscribe(AwaitForReconnect);
 
-        await client1.DialAsync(Debug.LogError);
+        await Client.DialAsync(Debug.LogError);
 
-        var nsConn = await client1.Connection.Connect(@namespace);
+        var nsConn = await Client.Connection.Connect(@namespace);
 
         await nsConn.JoinRoom("Party-499");
 
@@ -47,6 +49,12 @@ public class DemoNeffos : MonoBehaviour
             Debug.Log("Player 1 Receive Event: "+ $"{message.Event}" + message.Body.ToUTF8String());
             return message.Error;
         };
+        
+        RegisterEvent(MultipleAccountEvent, (nsConnection, message) =>
+        {
+            Debug.Log("Player 1 Receive Event: "+ $"{message.Event}" + message.Body.ToUTF8String());
+            return message.Error;
+        });
     }
 
     void AwaitForReconnect(NeffosClientState state)
@@ -84,7 +92,12 @@ public class DemoNeffos : MonoBehaviour
 
     private void OnDestroy()
     {
-        client1.Connection.Close();
+        UnRegisterEvent(MultipleAccountEvent, (nsConnection, message) =>
+        {
+            Debug.Log("Player 1 Receive Event: "+ $"{message.Event}" + message.Body.ToUTF8String());
+            return message.Error;
+        });
+        Client.Connection.Close();
     }
 
     private void OnGUI()
@@ -143,12 +156,12 @@ public class DemoNeffos : MonoBehaviour
 
         if (GUILayout.Button("Login"))
         {
-            client1.Connection.GetNamespace(@namespace).Ask("Login", string.Empty).Forget();
+            Client.Connection.GetNamespace(@namespace).Ask("Login", string.Empty).Forget();
         }
 
         if (GUILayout.Button("Log connected namespaces"))
         {
-            foreach (var (key, value) in client1.Connection.ConnectedNamespaces)
+            foreach (var (key, value) in Client.Connection.ConnectedNamespaces)
             {
                 foreach (var keyValuePair in value.Rooms)
                 {
@@ -161,7 +174,54 @@ public class DemoNeffos : MonoBehaviour
 
         if (GUILayout.Button("Reconnect"))
         {
-            client1.Reconnect();
+            Client.Reconnect();
         }
+    }
+    
+    public void RegisterEvent(string eventName, Func<NSConnection, Message, string> eventHandler)
+    {
+        var nsConn = GetNsConnection(@namespace);
+        if (nsConn == null)
+            return;
+
+        if (!nsConn.Events.TryGetValue(eventName, out var handler))
+        {
+            nsConn.Events.Add(eventName, eventHandler);
+        }
+        else
+        {
+            nsConn.Events[eventName] += eventHandler;
+        }
+    }
+
+    public void UnRegisterEvent(string eventName, Func<NSConnection, Message, string> eventHandler)
+    {
+        var nsConn = GetNsConnection(@namespace);
+        if (nsConn == null)
+            return;
+
+        if (!nsConn.Events.TryGetValue(eventName, out var handler) || handler == null)
+        {
+            return;
+        }
+
+        nsConn.Events[eventName] -= eventHandler;
+    }
+    
+    public  NSConnection GetNsConnection(string namespaceName)
+    {
+        if (Client?.Connection == null) return null;
+        return Client.Connection.GetNamespace(namespaceName);
+    }
+
+    void Test()
+    {
+        //create a scriptable object and save it in Resources folder
+        var scriptableObject = ScriptableObject.CreateInstance<ScriptableObject>();
+        AssetDatabase.CreateAsset(scriptableObject, "Assets/Resources/ScriptableObject.asset");
+        AssetDatabase.SaveAssets();
+
+        //load the scriptable object
+        var loadedScriptableObject = Resources.Load<ScriptableObject>("ScriptableObject");
     }
 }

@@ -19,6 +19,8 @@ namespace NeffosCSharp
 
         public Connection Connection => _connection;
 
+        public Action<string> Error { get; set; }
+
         private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
         private Connection _connection;
 
@@ -26,7 +28,7 @@ namespace NeffosCSharp
         private readonly string _endPoint;
         private readonly IConnectionHandler[] _connectionHandlers;
         private WebSocket _webSocket;
-        
+
         public NeffosClient(string endPoint, Options options, params IConnectionHandler[] connectionHandlers)
         {
             _endPoint = endPoint;
@@ -83,7 +85,7 @@ namespace NeffosCSharp
             {
                 _connection.Dispose();
             }
-                
+
             _connection = new Connection(_webSocket, namespaces);
             _connection.ReconnectTries = _options.ReconnectionAttempts;
 
@@ -92,7 +94,7 @@ namespace NeffosCSharp
             _webSocket.OnError += OnError;
             _webSocket.OnClosed += OnClosed;
             _webSocket.OnOpen += OnOpen;
-            if(_webSocket.IsOpen == false)
+            if (_webSocket.IsOpen == false)
                 _webSocket.Open();
             //wait for acknowledged
             return ConnectionTcs.Task;
@@ -109,10 +111,7 @@ namespace NeffosCSharp
             if (!string.IsNullOrEmpty(error))
             {
                 Debug.LogError(error);
-                if (error.Equals(Configuration.badNamespaceError))
-                {
-                    Reconnect();
-                }
+                ConnectionTcs.TrySetException(new Exception(error));
                 return;
             }
 
@@ -133,10 +132,7 @@ namespace NeffosCSharp
             if (!string.IsNullOrEmpty(error))
             {
                 Debug.LogError(error);
-                if (error.Equals(Configuration.badNamespaceError))
-                {
-                    Reconnect();
-                }
+                ConnectionTcs.TrySetException(new Exception(error));
                 return;
             }
 
@@ -152,14 +148,16 @@ namespace NeffosCSharp
 
         void OnError(WebSocket webSocket, string exception)
         {
-            Debug.LogError(exception);
-            Reconnect(webSocket).Forget();
+            Error?.Invoke(exception);
+            if (_options.RetryOnError)
+                Reconnect(webSocket).Forget();
         }
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
-            Debug.Log("Reconnecting on close " + code + " " + reason);
-            Reconnect(webSocket).Forget();
+            //Debug.Log("Reconnecting on close " + code + " " + reason);
+            //Reconnect(webSocket).Forget();
+            Debug.Log("[Websocket] Closed " + code + " " + reason);
         }
 
         void OnOpen(WebSocket websocket)
@@ -216,8 +214,9 @@ namespace NeffosCSharp
             tries++;
             goto Retry;
         }
-        
-        private async UniTask ConnectToNamespace(Dictionary<string, List<string>> previouslyConnectedNamespacesNamesOnly, Connection connection)
+
+        private async UniTask ConnectToNamespace(
+            Dictionary<string, List<string>> previouslyConnectedNamespacesNamesOnly, Connection connection)
         {
             if (previouslyConnectedNamespacesNamesOnly.Count == 0)
             {
@@ -225,6 +224,7 @@ namespace NeffosCSharp
                 State.Value = NeffosClientState.FailedToReconnectPreviously;
                 ConnectionTcs.TrySetCanceled();
             }
+
             foreach (var (key, value) in previouslyConnectedNamespacesNamesOnly)
             {
                 var newNsConn = await connection.AskConnect(key);
@@ -239,17 +239,17 @@ namespace NeffosCSharp
         // 1. server force-disconnect this client.
         // 2. client disconnects itself manually.
         // We check those two ^ with conn.isClosed().
-        private async UniTask Reconnect(WebSocket webSocket)
+        public async UniTask Reconnect(WebSocket webSocket)
         {
             if (State.Value == NeffosClientState.Reconnecting || State.Value == NeffosClientState.Connecting) return;
-            
+
             if (_connection.Closed)
             {
                 State.Value = NeffosClientState.ReconnectButWasClosed;
                 ConnectionTcs.TrySetCanceled();
                 return;
             }
-            
+
             if (!_connection.Closed)
             {
                 webSocket.OnMessage -= OnMessage;
@@ -280,7 +280,7 @@ namespace NeffosCSharp
 
                 previouslyConnectedNamespacesNamesOnly.Add(p.Key, previouslyJoinedRooms);
             }
-            
+
             _connection.Dispose();
 
             if (previouslyConnectedNamespacesNamesOnly.Count <= 0)
@@ -289,7 +289,7 @@ namespace NeffosCSharp
                 ConnectionTcs.TrySetCanceled();
                 return;
             }
-            
+
             var isOnline = await WhenResourceOnline(_endPoint, _options.ReconnectEvery);
             if (isOnline)
             {
@@ -321,6 +321,5 @@ namespace NeffosCSharp
         {
             return Reconnect(_webSocket);
         }
-        
     }
 }

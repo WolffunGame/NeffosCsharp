@@ -12,11 +12,14 @@ namespace NeffosCSharp
 
         public float ReconnectEvery;
         
-        public Options(int reconnectionAttempts, float reconnectEvery)
+        public bool RetryOnError;
+        
+        public Options(int reconnectionAttempts, float reconnectEvery, bool retryOnError = false)
         {
             Headers = new Dictionary<string, string>();
             ReconnectionAttempts = reconnectionAttempts;
             ReconnectEvery = reconnectEvery;
+            RetryOnError = retryOnError;
         }
 
         private const string URLParamAsHeaderPrefix = "X-Websocket-Header-";

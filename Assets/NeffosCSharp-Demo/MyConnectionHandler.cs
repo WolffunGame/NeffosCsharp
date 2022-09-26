@@ -37,10 +37,11 @@ namespace Scenes
 
         public string Handle(NSConnection nsConnection, Message message)
         {
+            Debug.Log("[MyConnectionHandler.Handle] Received event from server: " + message.Event);
             if (message.Event.Equals(MultipleAccountEvent))
             {
                 var client = GameObject.FindObjectOfType<DemoNeffos>();
-                client.client1.Close();
+                client.Client.Close();
                 Debug.Log($"[Event {message.Event}] Multiple device login detected: ");
             }
 
