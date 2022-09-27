@@ -20,6 +20,7 @@ namespace NeffosCSharp
         public Connection Connection => _connection;
 
         public Action<string> Error { get; set; }
+        public Action<ushort, string> Closed { get; set; }
 
         private UniTaskCompletionSource<Connection> ConnectionTcs { get; set; }
         private Connection _connection;
@@ -157,7 +158,9 @@ namespace NeffosCSharp
         {
             //Debug.Log("Reconnecting on close " + code + " " + reason);
             //Reconnect(webSocket).Forget();
+            
             Debug.Log("[Websocket] Closed " + code + " " + reason);
+            Closed?.Invoke(code, reason);
         }
 
         void OnOpen(WebSocket websocket)

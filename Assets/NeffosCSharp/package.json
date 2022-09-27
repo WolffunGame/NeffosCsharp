@@ -1,7 +1,7 @@
 {
   "name": "com.wolffun.neffoscsharp",
   "displayName": "Neffos Csharp",
-  "version": "1.0.0-preview.30",
+  "version": "1.0.0-preview.31",
   "unity": "2020.3",
   "license": "MIT",
   "dependencies": {
