@@ -24,6 +24,11 @@ public class DemoNeffos : MonoBehaviour
         return Client.Connection.GetNamespace(@namespace);
     }
 
+    private void Start()
+    {
+        Application.runInBackground = true;
+    }
+
     public Room GetRoom(string roomName)
     {
         var nsConn = Client.Connection.GetNamespace(@namespace);
@@ -37,12 +42,20 @@ public class DemoNeffos : MonoBehaviour
         Client = new NeffosClient(URL, option, chatServiceHandler);
         Client.Key = keyClient1;
         Client.State.Subscribe(AwaitForReconnect);
+        Client.Error += (string message) =>
+        {
+            Debug.LogError("DemoConnectionA Error - " + message);
+        };
+        Client.Closed += (ushort code, string reason) =>
+        {
+            Debug.LogError("DemoConnectionA Closed - " + reason + " - Code = " + code);
+        };
 
         await Client.DialAsync(Debug.LogError);
 
         var nsConn = await Client.Connection.Connect(@namespace);
 
-        await nsConn.JoinRoom("Party-499");
+       // await nsConn.JoinRoom("Party-499");
 
         nsConn.Events[Configuration.OnAnyEvent] += (nsConnection, message) =>
         {
@@ -175,6 +188,11 @@ public class DemoNeffos : MonoBehaviour
         if (GUILayout.Button("Reconnect"))
         {
             Client.Reconnect();
+        }
+
+        if (GUILayout.Button("Disconnect"))
+        {
+            Client.Close();
         }
     }
     
