@@ -64,7 +64,8 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
-            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(8f);
+            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(3f);
+            _webSocket.PingFrequency = 200;
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
 
@@ -89,7 +90,6 @@ namespace NeffosCSharp
 
             _connection = new Connection(_webSocket, namespaces);
             _connection.ReconnectTries = _options.ReconnectionAttempts;
-
             _webSocket.OnMessage += OnMessage;
             _webSocket.OnBinary += OnBinary;
             _webSocket.OnError += OnError;
@@ -150,6 +150,10 @@ namespace NeffosCSharp
         void OnError(WebSocket webSocket, string exception)
         {
             Error?.Invoke(exception);
+
+            if (!_connection.Closed)
+                Close();
+
             if (_options.RetryOnError)
                 Reconnect(webSocket).Forget();
         }
@@ -161,6 +165,9 @@ namespace NeffosCSharp
             
             Debug.Log("[Websocket] Closed " + code + " " + reason);
             Closed?.Invoke(code, reason);
+
+            if (_options.RetryOnError)
+                Reconnect(webSocket).Forget();
         }
 
         void OnOpen(WebSocket websocket)
