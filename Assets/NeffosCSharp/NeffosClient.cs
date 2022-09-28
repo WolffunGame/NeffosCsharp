@@ -64,8 +64,7 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
-            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(3f);
-            _webSocket.PingFrequency = 200;
+            _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
 
