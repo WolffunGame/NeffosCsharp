@@ -64,6 +64,7 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
+            BestHTTP.HTTPManager.UseAlternateSSLDefaultValue = false;
             _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
