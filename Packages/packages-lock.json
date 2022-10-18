@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.assetstore.besthttp": {
+      "version": "https://github.com/WolffunGame/BestHTTP2.git#2.7.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "143fa0afb7fc08513686e9bdf43b1578c839b1aa"
+    },
     "com.coffee.upm-git-extension": {
       "version": "2.0.1",
       "depth": 0,
