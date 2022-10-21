@@ -64,7 +64,6 @@ namespace NeffosCSharp
             }
 
             _webSocket = new WebSocket(new Uri(_endPoint));
-            BestHTTP.HTTPManager.UseAlternateSSLDefaultValue = false;
             _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
 #if !UNITY_WEBGL || UNITY_EDITOR
             _webSocket.StartPingThread = true;
@@ -160,10 +159,6 @@ namespace NeffosCSharp
 
         void OnClosed(WebSocket webSocket, ushort code, string reason)
         {
-            //Debug.Log("Reconnecting on close " + code + " " + reason);
-            //Reconnect(webSocket).Forget();
-            
-            Debug.Log("[Websocket] Closed " + code + " " + reason);
             Closed?.Invoke(code, reason);
 
             if (_options.RetryOnError)
