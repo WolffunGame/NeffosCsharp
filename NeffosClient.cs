@@ -50,19 +50,18 @@ namespace NeffosCSharp
                 ConnectionTcs.TrySetException(new Exception("No connection handlers found"));
             }
 
-            if (!_options.Headers.ContainsKey("Authorization"))
-                _options.Headers.Add("Authorization", Key);
+            _options.Headers.TryAdd("Authorization", Key);
 
             if (_options.ReconnectionAttempts > 0)
             {
-                if (!_options.Headers.ContainsKey(WebsocketReconnectHeaderKey))
-                    _options.Headers.Add(WebsocketReconnectHeaderKey, _options.ReconnectionAttempts.ToString());
+                _options.Headers.TryAdd(WebsocketReconnectHeaderKey, _options.ReconnectionAttempts.ToString());
             }
             else if (_options.Headers.ContainsKey(WebsocketReconnectHeaderKey))
             {
                 _options.Headers.Remove(WebsocketReconnectHeaderKey);
             }
 
+            HTTPManager.UserAgent = $"Unity/{Application.unityVersion} ({SystemInfo.operatingSystem}, {SystemInfo.deviceModel})";
             _webSocket = new WebSocket(new Uri(_endPoint));
             _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
 #if !UNITY_WEBGL || UNITY_EDITOR
