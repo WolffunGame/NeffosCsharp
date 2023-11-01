@@ -61,7 +61,7 @@ namespace NeffosCSharp
                 _options.Headers.Remove(WebsocketReconnectHeaderKey);
             }
 
-            HTTPManager.UserAgent = $"Unity/{Application.unityVersion} ({SystemInfo.operatingSystem}, {SystemInfo.deviceModel})";
+            //HTTPManager.UserAgent = $"Unity/{Application.unityVersion} ({SystemInfo.operatingSystem}, {SystemInfo.deviceModel})";
             _webSocket = new WebSocket(new Uri(_endPoint));
             _webSocket.CloseAfterNoMessage = TimeSpan.FromSeconds(5f);
 #if !UNITY_WEBGL || UNITY_EDITOR
