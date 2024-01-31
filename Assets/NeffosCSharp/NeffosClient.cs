@@ -310,6 +310,9 @@ namespace NeffosCSharp
 
         public void Dispose()
         {
+            _webSocket.OnMessage -= OnMessage;
+            _webSocket.OnBinary -= OnBinary;
+            _webSocket.OnError -= OnError;
             _connection.Dispose();
             ConnectionTcs.TrySetCanceled();
         }
